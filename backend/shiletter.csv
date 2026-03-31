@@ -1,0 +1,96 @@
+hall, meal, item_name, calories, protein_g, carbs_g, fat_g
+Shilletter, breakfast, Scrambled Eggs, 190, 16, 0, 12
+Shilletter, breakfast, Pork Sausage Patty, 180, 5, 0, 18
+Shilletter, breakfast, Hash Brown Potatoes, 120, 1, 19, 5
+Shilletter, breakfast, Sausage Biscuit, 440, 10, 36, 29
+Shilletter, breakfast, Buttermilk Pancakes, 160, 5, 33, 2
+Shilletter, breakfast, Pancake Syrup, 3580, 1, 894, 0
+Shilletter, breakfast, Average Salad, 58, 2, 9,2
+Shilletter, breakfast, Grits, 90, 2, 21, 0
+Shilletter, breakfast, Old Fashioned Oatmeal, 110, 4, 20, 2
+Shilletter, breakfast, Scrambled Just Egg, 200, 13, 2, 16
+Shilletter, breakfast, Hash Browns, 120, 1, 11, 8
+Shilletter, breakfast, Apple Cinnamon Muffin, 320, 2, 35, 10
+Shilletter, breakfast, Bacon, 110, 7, 1, 9
+Shilletter, breakfast, Double Chocolate Chip Mini Muffin, 120, 1, 21, 4
+Shilletter, breakfast, Raspberry White Chocolate Scone, 140, 1, 25, 4
+
+Shilletter, lunch, Italian Vegetable Blend, 35, 2, 7, 0
+Shilletter, lunch, Whole Grain Garlic Toast, 100, 3, 16, 3
+Shilletter, lunch, Tortellini Rose, 220, 7, 30, 8
+Shilletter, lunch, Baked BBQ Chicken, 450, 22, 2, 50
+Shilletter, lunch, Southwest Green Beans, 45, 2, 7, 2
+Shilletter, lunch, Roasted Sweet Potatoes, 110, 2, 22, 2
+Shilletter, lunch, Steamed Corn, 80, 3, 18, 1
+Shilletter, lunch, Homestyle Mashed Potatoes, 130, 2, 22, 4
+Shilletter, lunch, Country Gravy, 40, 1, 7, 2
+Shilletter, lunch, Shredded Cheddar Cheese, 110, 6, 1, 9
+Shilletter, lunch, Sliced Scallions, 0, 0, 0, 0
+Shilletter, lunch, Backyard BBQ Burger, 470, 20, 38, 27
+Shilletter, lunch, Crispy Homestyle French Fries, 120, 1, 21, 4
+Shilletter, lunch, Classic Cheese Pizza, 280, 13, 35, 9
+Shilletter, lunch, Pepperoni Pizza, 310, 14, 35, 12
+Shilletter, lunch, Roasted Vegetable Pizza, 260, 12, 34, 9
+Shilletter, lunch, White Bread, 60, 2, 12, 0
+Shilletter, lunch, Whole Wheat Bread, 60, 3, 13, 1
+Shilletter, lunch, American Cheese, 50, 3, 1, 4
+Shilletter, lunch, Ham, 30, 5, 2, 1
+Shilletter, lunch, Turkey breast, 25, 4, 1, 0
+Shilletter, lunch, Average Salad, 51, 3, 2, 3
+Shilletter, lunch, Chipotle Chicken Tortilla Soup, 100, 5, 13, 3
+Shilletter, lunch, Black Bean Soup, 140, 7, 22, 3
+Shilletter, lunch, Corn Muffin, 240, 5, 33, 11
+Shilletter, lunch, Chickpea Tangine, 110, 3, 15, 5
+Shilletter, lunch, Grilled Zucchini Squash, 60, 1, 3, 5
+Shilletter, lunch, Basmati Rice, 130, 4, 29, 0
+Shilletter, lunch, Mixed Grill, 160, 10, 4, 10
+Shilletter, lunch, Roasted Brussels Sprouts, 40, 3, 7, 2
+Shilletter, lunch, Confetti Rice, 150, 3, 28, 3
+Shilletter, lunch, Lemon Cake, 80, 0, 8, 3
+Shilletter, lunch, Roasted Chicken breast, 140, 26, 0, 3
+Shilletter, lunch, Brussels Sprouts and Carrots, 35, 2, 7, 0
+Shilletter, lunch, Grilled Zucchini Squash, 60, 1, 3, 5
+Shilletter, lunch, Brown Rice and Quinoa, 120, 4, 22, 2
+Shilletter, lunch, Farro, 120, 5, 25, 0
+Shilletter, lunch, Devil's Food Cupcake, 160, 2, 25, 5
+Shilletter, lunch, Cream Cheese Marbled Brownie, 240, 3, 35, 10
+Shilletter, lunch, Crispy Cereal Bar, 160, 1, 27, 5
+Shilletter, lunch, Chocolate Chip Cookie, 120, 1, 16, 6
+Shilletter, lunch, Snickerdoddle Cookie, 130, 1, 19, 5
+Shilletter, lunch, Sugar Cookie, 230, 2, 33, 10
+
+Shilletter, dinner, White Rice, 120, 3, 26, 0
+Shilletter, dinner, Sliced Bake Chicken, 110, 21, 0, 3
+Shilletter, dinner, Diced Carrots, 10, 0, 3, 0
+Shilletter, dinner, Sliced Yellow Onions, 5, 0, 1, 0
+Shilletter, dinner, Spiced Rubbed Pork Loin, 200, 27, 4, 7
+Shilletter, dinner, Green Beans and Carrots, 45, 1, 7, 2
+Shilletter, dinner, Roasted Garlic Potatoes, 80, 2, 17, 2
+Shilletter, dinner, Roasted Brussels Sprouts, 40, 3, 7, 2
+Shilletter, dinner, Cheesy Chicken Casserole, 180, 10, 16, 8
+Shilletter, dinner, Char Grilled Turkey Burger, 350, 22, 34, 10
+Shilletter, dinner, Crispy Tater Tots, 90, 1, 12, 5
+Shilletter, dinner, Classic Cheese Pizza, 280, 13, 35, 9
+Shilletter, dinner, Pepperoni Pizza, 310, 14, 35, 12
+Shilletter, dinner, White Bread, 60, 2, 12, 0
+Shilletter, dinner,  Whole Wheat Bread, 60, 3, 13, 1
+Shilletter, dinner, American Cheese, 50, 3, 1, 4
+Shilletter, dinner, Ham, 30, 5, 2, 1
+Shilletter, dinner, Turkey Breast, 25, 4, 1, 0
+Shilletter, dinner, Average Salad, 51, 3, 2, 3
+Shilletter, dinner, Chipotle Chicken Tortilla Soup, 100, 5, 13, 3
+Shilletter, dinner, Black Bean Soup, 140, 7, 22, 3
+Shilletter, dinner, Corn Muffin, 240, 5, 33, 11
+Shilletter, dinner, Italian Vegetable Blend, 35, 2, 7, 0
+Shilletter, dinner, Vegan Cavatappi Alfredo, 360, 10, 48, 15
+Shilletter, dinner, Baked Pit Ham, 120, 16, 3, 5
+Shilletter, dinner, Fresh Whole Green Beans, 2, 6, 0
+Shilletter, dinner, Baked Sweet Potato, 120, 2, 28, 0
+Shilletter, dinner, Roasted Chicken breast, 140, 26, 0, 3
+Shilletter, dinner, Brussels Sprouts and Carrots, 35, 2, 7, 0
+Shilletter, dinner, Grilled Zucchini Squash, 60, 1, 3, 5
+Shilletter, dinner, Brown Rice and Quinoa, 120, 4, 22, 2
+Shilletter, dinner, Farro, 120, 5, 25, 0
+Shilletter, dinner, Double Chocolate Brownie, 240, 3, 40, 8
+Shilletter, dinner, Chocolate Chip Cookie, 120, 1, 16, 6
+Shilletter, dinner, Cookies and Cream Pudding, 160, 1, 29, 4

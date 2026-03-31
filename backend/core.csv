@@ -1,0 +1,138 @@
+hall, meal, item_name, calories, protein_g, carbs_g, fat_g
+core, breakfast, scrambled eggs, 180, 15, 0, 12
+core, breakfast,  turkey bacon, 60, 4, 0, 5
+core, breakfast, Home Fries, 140, 2, 24, 4.5
+core, breakfast, bacon egg and cheese biscuit, 280, 11, 27, 15
+core, breakfast, southern biscuit, 190, 4, 26, 7
+core, breakfast, oatmeal, 110, 4, 20, 2
+core, breakfast, non-fat greek yogurt, 35, 6, 2, 0
+core, breakfast, non-fat vanilla/strawberry yogurt, 45, 2, 9, 0
+core, breakfast, chocolate croissant, 5, 0,0,0
+core, breakfast, iced cinnamon roll, 200, 3,31, 8
+core, breakfast, banana bread, 170, 2, 32, 4.5 
+core, lunch, cumin-spiced grilled carrots, 45, 1, 8, 1
+core, lunch, basmati rice, 130, 3, 27, 1
+core, lunch, seasoned black beans, 90, 5, 15, 1
+core, lunch, ground beef, 90, 8, 0, 6
+core, lunch, shredded cheddar cheese, 110, 7, 1, 9
+core, lunch, sour cream, 30, 0, 1, 3
+core, lunch, flour tortilla, 90, 3, 15, 2
+core, lunch, iceberg lettuce, 5, 0, 1, 0
+core, lunch, mexi-rice, 130, 3, 26, 2
+core, lunch, classic hot dog, 310, 11, 27, 18
+core, lunch, crispy homestyle french fries, 120, 2, 15, 6
+core, lunch, cheeseburger, 420, 22, 30, 22
+core, lunch, crispy homestyle french fries, 120, 2, 15, 6
+core, lunch, honey mustard grilled chicken, 430, 32, 32, 18
+core, lunch, crispy homestyle french fries, 120, 2, 15, 6
+core, lunch, american cheese, 50, 3, 1, 4
+core, lunch, cheddar cheese, 60, 4, 0, 5
+core, lunch, swiss cheese, 60, 5, 1, 4
+core, lunch, lettuce, 5, 0, 1, 0
+core, lunch, sliced red onions, 5, 0, 1, 0
+core, lunch, classic cheese pizza, 270, 12, 28, 12
+core, lunch, pepperoni pizza, 300, 13, 28, 15
+core, lunch, flour tortilla (large), 210, 6, 34, 5
+core, lunch, white bread, 80, 3, 14, 1
+core, lunch, whole wheat bread, 90, 4, 17, 1
+core, lunch, cheddar cheese, 60, 4, 0, 5
+core, lunch, creamy tuna salad, 140, 10, 2, 10
+core, lunch, ham, 30, 5, 1, 1
+core, lunch, provolone cheese, 50, 4, 0, 4
+core, lunch, swiss cheese, 60, 5, 1, 4
+core, lunch, turkey breast, 25, 5, 0, 0
+core, lunch, bacon pieces, 70, 5, 0, 5
+core, lunch, chopped hard-cooked egg, 70, 6, 1, 5
+core, lunch, diced ham, 50, 8, 1, 1
+core, lunch, garbanzo beans, 70, 4, 12, 1
+core, lunch, shredded cheddar cheese, 110, 7, 1, 9
+core, lunch, shredded mozzarella, 40, 3, 1, 3
+core, lunch, croutons, 60, 2, 10, 2
+core, lunch, baby spinach, 100, 12, 10, 1
+core, lunch, black olives, 20, 0, 1, 2
+core, lunch, cucumbers, 0, 0, 1, 0
+core, lunch, grape tomatoes, 10, 0, 2, 0
+core, lunch, romaine lettuce, 5, 0, 1, 0
+core, lunch, shredded carrots, 5, 0, 1, 0
+core, lunch, sliced mixed bell peppers, 100, 2, 24, 0
+core, lunch, spring salad mix, 0, 0, 1, 0
+core, lunch, balsamic vinaigrette, 60, 0, 4, 4
+core, lunch, creamy caesar dressing, 140, 1, 2, 14
+core, lunch, honey mustard dressing, 130, 0, 10, 9
+core, lunch, light ranch dressing, 80, 1, 2, 7
+core, lunch, lite italian dressing, 40, 0, 6, 2
+core, lunch, black bean soup, 140, 8, 22, 2
+core, lunch, plant-based chicken tenders, 130, 10, 15, 4
+core, lunch, crispy homestyle french fries, 120, 2, 18, 5
+core, lunch, citrus braised pork, 180, 22, 3, 8
+core, lunch, green chili calabacitas, 50, 2, 9, 1
+core, lunch, cilantro lime rice, 120, 2, 25, 2
+core, lunch, snickerdoodle cookie, 260, 3, 33, 13
+core, lunch, chocolate brownie, 130, 2, 20, 6
+core, lunch, chocolate chip cookie, 120, 2, 16, 6
+core, lunch, oatmeal raisin cookie, 230, 3, 32, 10
+core, dinner, seasoned roast beef, 120, 22, 0, 4
+core, dinner, green beans gremolada, 70, 2, 8, 3
+core, dinner, yellow basmati rice, 150, 3, 32, 2
+core, dinner, seasoned black beans, 90, 6, 15, 1
+core, dinner, mexi-rice, 130, 3, 26, 2
+core, dinner, sour cream, 30, 0, 1, 3
+core, dinner, flour tortilla, 90, 3, 15, 2
+core, dinner, iceberg lettuce, 10, 0, 2, 0
+core, dinner, pico de gallo, 5, 0, 1, 0
+core, dinner, pita chips, 35, 1, 6, 1
+core, dinner, ground beef, 90, 8, 1, 5
+core, dinner, classic hot dog, 310, 11, 27, 18
+core, dinner, crispy homestyle french fries, 120, 2, 15, 6
+core, dinner, cheeseburger, 420, 22, 30, 22
+core, dinner, crispy homestyle french fries, 120, 2, 15, 6
+core, dinner, honey mustard grilled chicken, 430, 32, 32, 18
+core, dinner, crispy homestyle french fries, 120, 2, 15, 6
+core, dinner, american cheese, 50, 3, 1, 4
+core, dinner, cheddar cheese, 60, 4, 0, 5
+core, dinner, swiss cheese, 60, 5, 1, 4
+core, dinner, lettuce, 5, 0, 1, 0
+core, dinner, sliced red onions, 5, 0, 1, 0
+core, dinner, classic cheese pizza, 270, 12, 28, 12
+core, dinner, pepperoni pizza, 300, 13, 28, 15
+core, dinner, flour tortilla (large), 210, 6, 34, 5
+core, dinner, white bread, 80, 3, 14, 1
+core, dinner, whole wheat bread, 90, 4, 17, 1
+core, dinner, cheddar cheese, 60, 4, 0, 5
+core, dinner, creamy tuna salad, 140, 10, 2, 10
+core, dinner, ham, 30, 5, 1, 1
+core, dinner, provolone cheese, 50, 4, 0, 4
+core, dinner, swiss cheese, 60, 5, 1, 4
+core, dinner, turkey breast, 25, 5, 0, 0
+core, dinner, bacon pieces, 70, 5, 0, 5
+core, dinner, chopped hard-cooked egg, 70, 6, 1, 5
+core, dinner, diced ham, 50, 8, 1, 1
+core, dinner, garbanzo beans, 70, 4, 12, 1
+core, dinner, shredded cheddar cheese, 110, 7, 1, 9
+core, dinner, shredded mozzarella, 40, 3, 1, 3
+core, dinner, croutons, 60, 2, 10, 2
+core, dinner, baby spinach, 100, 12, 10, 1
+core, dinner, black olives, 20, 0, 1, 2
+core, dinner, cucumbers, 0, 0, 1, 0
+core, dinner, grape tomatoes, 10, 0, 2, 0
+core, dinner, romaine lettuce, 5, 0, 1, 0
+core, dinner, shredded carrots, 5, 0, 1, 0
+core, dinner, sliced mixed bell peppers, 100, 2, 24, 0
+core, dinner, spring salad mix, 0, 0, 1, 0
+core, dinner, balsamic vinaigrette, 60, 0, 4, 4
+core, dinner, creamy caesar dressing, 140, 1, 2, 14
+core, dinner, honey mustard dressing, 130, 0, 10, 9
+core, dinner, light ranch dressing, 80, 1, 2, 7
+core, dinner, lite italian dressing, 40, 0, 6, 2
+core, dinner, black bean soup, 140, 8, 22, 2
+core, dinner, plant-based chicken tenders, 130, 10, 15, 4
+core, dinner, crispy homestyle french fries, 120, 2, 18, 5
+core, dinner, citrus braised pork, 180, 22, 3, 8
+core, dinner, green chili calabacitas, 50, 2, 9, 1
+core, dinner, cilantro lime rice, 120, 2, 25, 2
+core, dinner, snickerdoodle cookie, 260, 3, 33, 13
+core, dinner, double fudge brownie, 300, 2, 52, 10
+core, dinner, cookie and cream blondie, 270, 3, 40, 11
+
+
+
