@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import './App.css'
 
-const API = 'http://localhost:8000'
+const API = 'https://tigerplate-api.onrender.com'
 
 function App() {
   const [meals, setMeals] = useState([])
