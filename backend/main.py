@@ -60,7 +60,7 @@ GRAPHQL_QUERY = """query getLocationRecipes($campusUrlKey:String!$locationUrlKey
 STATION_NAMES = {
     # Schilletter
     1501: "Destination Station",
-    1504: "Nutrition Calculator",
+    1504: "Salad Bar",
     1507: "The Grill",
     1510: "Deli",
     1513: "Pizza",
@@ -71,6 +71,26 @@ STATION_NAMES = {
     1528: "Desserts",
     1531: "Clean Eats",
     1534: "Salad Bar",
+    # Douthit Hills (Community Hub)
+    1755: "Smokehouse",
+    1758: "Burgers",
+    1761: "Chopped Salad",
+    1764: "Fusion Cafe",
+    1767: "Bento Sushi",
+    1770: "Grill & Deli",
+    1773: "Pies & Wedgies",
+    1776: "Salad Bar",
+    1779: "Soups",
+    1782: "Desserts",
+    # McAlister (The Dish)
+    501: "Salad Bar",
+    504: "Nutrition Calculator",
+    522: "Sushi",
+    534: "Pasta",
+    537: "Vegan",
+    696: "Homeline",
+    699: "The Grill",
+    1094: "Gluten Solutions",
 }
 
 
