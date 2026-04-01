@@ -561,7 +561,7 @@ function App() {
               {showDetail.cholesterol != null && <div className="md-row"><span>Cholesterol</span><span>{showDetail.cholesterol}mg</span></div>}
             </div>
 
-            {showDetail.allergens && showDetail.allergens !== 'Contains: ' && (
+            {showDetail.allergens && showDetail.allergens !== 'Contains: ' && showDetail.allergens.replace('Contains: ', '').trim().length > 0 && (
               <div className="modal-allergens">⚠️ {showDetail.allergens}</div>
             )}
 
