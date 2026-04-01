@@ -43,6 +43,7 @@ GRAPHQL_HEADERS = {
 
 LOCATIONS = {
     "schilletter": "schilletter-dining-hall",
+    "core": "core-dining-hall",  
     "douthit": "community-hub",
     "mcalister": "the-dish-at-mcalister",
 }
@@ -56,42 +57,49 @@ MEAL_PERIODS = {
 
 GRAPHQL_QUERY = """query getLocationRecipes($campusUrlKey:String!$locationUrlKey:String!$date:String!$mealPeriod:Int$viewType:Commerce_MenuViewType!){getLocationRecipes(campusUrlKey:$campusUrlKey locationUrlKey:$locationUrlKey date:$date mealPeriod:$mealPeriod viewType:$viewType){locationRecipesMap{skus stationSkuMap{id skus __typename}dateSkuMap{date stations{id skus{simple configurable{sku variants __typename}__typename}__typename}__typename}__typename}products{items{id name sku images{label roles url __typename}attributes{name value __typename}...on Catalog_SimpleProductView{price{final{amount{currency value __typename}__typename}__typename}__typename}...on Catalog_ComplexProductView{options{title values{id title ...on Catalog_ProductViewOptionValueProduct{product{name sku attributes{name value __typename}price{final{amount{value currency __typename}__typename}__typename}__typename}__typename}__typename}__typename}__typename}__typename}__typename}}}"""
 
-# Station name mapping (from Clemson's site structure)
-STATION_NAMES = {
-    # Schilletter
-    1501: "Destination Station",
-    1504: "Salad Bar",
-    1507: "The Grill",
-    1510: "Deli",
-    1513: "Pizza",
-    1516: "True Balance",
-    1519: "Home Zone",
-    1522: "Mongolian Grill",
-    1525: "Soups",
-    1528: "Desserts",
-    1531: "Clean Eats",
-    1534: "Salad Bar",
-    # Douthit Hills (Community Hub)
-    1755: "Smokehouse",
-    1758: "Burgers",
-    1761: "Chopped Salad",
-    1764: "Fusion Cafe",
-    1767: "Bento Sushi",
-    1770: "Grill & Deli",
-    1773: "Pies & Wedgies",
-    1776: "Salad Bar",
-    1779: "Soups",
-    1782: "Desserts",
-    # McAlister (The Dish)
-    501: "Salad Bar",
-    504: "Nutrition Calculator",
-    522: "Sushi",
-    534: "Pasta",
-    537: "Vegan",
-    696: "Homeline",
-    699: "The Grill",
-    1094: "Gluten Solutions",
-}
+# Cache for auto-discovered station names
+station_name_cache = {}
+
+
+async def fetch_station_names(location_url: str) -> dict:
+    """Auto-discover station names from the categories GraphQL API."""
+    if location_url in station_name_cache:
+        return station_name_cache[location_url]
+
+    query = '{Commerce_getCategories(campusUrlKey:"campus" locationUrlKey:"' + location_url + '"){items{id name urlKey children{id name urlKey children{id name urlKey __typename}__typename}__typename}__typename}}'
+    params = {
+        "query": query,
+        "extensions": json.dumps({"clientLibrary": {"name": "@apollo/client", "version": "4.1.6"}}),
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(GRAPHQL_URL, params=params, headers=GRAPHQL_HEADERS)
+            resp.raise_for_status()
+            data = resp.json()
+    except Exception as e:
+        print(f"  Error fetching categories for {location_url}: {e}")
+        return {}
+
+    names = {}
+    items = data.get("data", {}).get("Commerce_getCategories", {}).get("items", [])
+
+    def walk(cats):
+        for cat in cats:
+            cid = cat.get("id")
+            cname = cat.get("name", "")
+            if cid and cname:
+                try:
+                    names[int(cid)] = cname
+                except (ValueError, TypeError):
+                    pass
+            if cat.get("children"):
+                walk(cat["children"])
+
+    walk(items)
+    station_name_cache[location_url] = names
+    print(f"  Loaded {len(names)} station names for {location_url}")
+    return names
 
 
 def extract_attr(attributes: list, name: str) -> Optional[str]:
@@ -102,7 +110,7 @@ def extract_attr(attributes: list, name: str) -> Optional[str]:
     return None
 
 
-def parse_product(item: dict, hall: str, meal: str, station_id: int = None) -> Optional[dict]:
+def parse_product(item: dict, hall: str, meal: str, station_id: int = None, station_names: dict = None) -> Optional[dict]:
     """Parse a single product from the GraphQL response into a clean meal dict."""
     attrs = item.get("attributes", [])
     
@@ -146,7 +154,8 @@ def parse_product(item: dict, hall: str, meal: str, station_id: int = None) -> O
     sat_fat = extract_attr(attrs, "saturated_fat")
     cholesterol = extract_attr(attrs, "cholesterol")
     
-    station_name = STATION_NAMES.get(station_id, "Other") if station_id else "Other"
+    sn = station_names or {}
+    station_name = sn.get(station_id, "Other") if station_id else "Other"
 
     return {
         "item_name": name.strip(),
@@ -206,6 +215,9 @@ async def fetch_menu(location_key: str, location_url: str, meal_name: str, meal_
         return []
     products = products_data.get("items", [])
     
+    # Fetch station names for this location
+    sn = await fetch_station_names(location_url)
+    
     # Build SKU -> station mapping
     sku_station = {}
     for station in loc_map.get("stationSkuMap", []):
@@ -231,7 +243,6 @@ async def fetch_menu(location_key: str, location_url: str, meal_name: str, meal_
     
     hall_display = {
         "schilletter": "Schilletter",
-        "core": "Core",
         "douthit": "Douthit Hills",
         "mcalister": "McAlister",
     }.get(location_key, location_key)
@@ -244,7 +255,7 @@ async def fetch_menu(location_key: str, location_url: str, meal_name: str, meal_
             continue
         
         station_id = sku_station.get(sku)
-        parsed = parse_product(item, hall_display, meal_name, station_id)
+        parsed = parse_product(item, hall_display, meal_name, station_id, sn)
         
         if parsed and parsed["item_name"].lower() not in seen_names:
             seen_names.add(parsed["item_name"].lower())
@@ -396,39 +407,17 @@ async def get_healthier(
     if not current:
         return {"error": "Meal not found", "alternatives": []}
 
-    cur_cal = current["calories"]
-    cur_pro = current["protein"]
+    same_hall = [m for m in all_meals
+                 if m["hall"].lower() == current["hall"].lower()
+                 and m["meal"].lower() == current["meal"].lower()
+                 and m["item_name"].lower() != item_name.lower()
+                 and m["calories"] < current["calories"]]
     
-    # Find alternatives: same hall, same meal period, fewer calories
-    candidates = [m for m in all_meals
-                  if m["hall"].lower() == current["hall"].lower()
-                  and m["meal"].lower() == current["meal"].lower()
-                  and m["item_name"].lower() != item_name.lower()
-                  and m["calories"] < cur_cal
-                  and m["calories"] > 50]  # skip tiny sides/condiments
-    
-    # Score each alternative by how good a swap it is
-    # Higher protein-per-calorie ratio = better swap
-    # Similar calorie range = more realistic swap (not comparing entree to a side)
-    for c in candidates:
-        pro_per_cal = (c["protein"] / max(c["calories"], 1)) * 100
-        cal_saved = cur_cal - c["calories"]
-        # Prefer items that are substantial (>100 cal) and high protein ratio
-        size_bonus = 20 if c["calories"] > 150 else 0
-        protein_bonus = 30 if c["protein"] >= cur_pro * 0.6 else 0
-        c["_score"] = pro_per_cal + (cal_saved * 0.05) + size_bonus + protein_bonus
-    
-    candidates.sort(key=lambda x: x.get("_score", 0), reverse=True)
-    
-    # Clean up the score field before returning
-    results = []
-    for c in candidates[:limit]:
-        clean = {k: v for k, v in c.items() if not k.startswith("_")}
-        results.append(clean)
+    same_hall.sort(key=lambda x: x["calories"], reverse=True)
 
     return {
         "current": current,
-        "alternatives": results,
+        "alternatives": same_hall[:limit],
     }
 
 
