@@ -271,3 +271,26 @@ body{background:var(--bg);color:var(--t);font-family:'Outfit',sans-serif;-webkit
 .goal-icon{font-size:1.5rem}
 .goal-label{font-size:.9rem;font-weight:800;color:var(--t)}
 .goal-desc{font-size:.7rem;color:var(--td);font-weight:500}
+
+/* SETTINGS */
+.settings-section{margin-bottom:20px}
+.settings-profile-card{display:flex;align-items:center;gap:14px;background:var(--c);border:1px solid var(--cb);border-radius:16px;padding:18px}
+.settings-avatar{width:48px;height:48px;border-radius:50%;background:var(--o);display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;color:#fff;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.settings-profile-name{font-size:1rem;font-weight:800}
+.settings-profile-email{font-size:.75rem;color:var(--td);margin-top:2px}
+.settings-row{display:flex;gap:8px;align-items:center}
+.settings-row .auth-input{flex:1}
+.settings-save{padding:13px 18px;background:var(--o);border:none;border-radius:10px;color:#fff;font-size:.8rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;transition:background .15s}
+.settings-save:hover{background:var(--od)}
+.settings-macros{display:flex;gap:6px;margin-top:10px}
+.sm-item{flex:1;background:var(--c);border:1px solid var(--cb);border-radius:10px;padding:10px 8px;text-align:center}
+.sm-label{display:block;font-size:.55rem;color:var(--td);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.sm-val{display:block;font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:800;color:var(--o);margin-top:2px}
+.settings-about{background:var(--c);border:1px solid var(--cb);border-radius:12px;padding:4px 14px}
+.settings-about .md-row{padding:10px 0;border-bottom:1px solid var(--cb)}
+.settings-about .md-row:last-child{border-bottom:none}
+.history-list{display:flex;flex-direction:column;gap:5px}
+.history-item{display:flex;justify-content:space-between;align-items:center;background:var(--c);border:1px solid var(--cb);border-radius:10px;padding:10px 14px}
+.history-macros{display:flex;gap:8px;flex-shrink:0}
+.btn-danger{width:100%;padding:12px;margin-top:8px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:var(--r);border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .15s}
+.btn-danger:hover{background:rgba(239,68,68,0.15)}

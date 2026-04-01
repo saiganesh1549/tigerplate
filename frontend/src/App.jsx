@@ -38,6 +38,12 @@ function App() {
   const [showSplash, setShowSplash] = useState(true)
   const [imagePreview, setImagePreview] = useState(null)
   const [logToast, setLogToast] = useState(null)
+  const [settingsGoal, setSettingsGoal] = useState('')
+  const [settingsName, setSettingsName] = useState('')
+  const [newPass, setNewPass] = useState('')
+  const [settingsMsg, setSettingsMsg] = useState('')
+  const [mealHistory, setMealHistory] = useState([])
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const fileInputRef = useRef(null)
   const chatEndRef = useRef(null)
 
@@ -103,6 +109,46 @@ function App() {
   }
 
   const handleLogout = async () => { await supabase.auth.signOut(); setUser(null); setProfile(null); setDailyLog([]); setActiveTab('home') }
+
+  const updateGoal = async (newGoal) => {
+    const macros = { cut: { calorie_goal: 1800, protein_goal: 180, carbs_goal: 150, fat_goal: 60 }, maintain: { calorie_goal: 2200, protein_goal: 150, carbs_goal: 250, fat_goal: 70 }, bulk: { calorie_goal: 2800, protein_goal: 180, carbs_goal: 350, fat_goal: 80 } }[newGoal]
+    if (user?.id !== 'guest') { await supabase.from('profiles').update({ goal: newGoal, ...macros }).eq('id', user.id) }
+    setProfile(prev => ({ ...prev, goal: newGoal, ...macros }))
+    setSettingsGoal(newGoal)
+    setSettingsMsg('Goal updated!')
+    setTimeout(() => setSettingsMsg(''), 2000)
+  }
+
+  const updateName = async () => {
+    if (user?.id !== 'guest') { await supabase.from('profiles').update({ name: settingsName }).eq('id', user.id) }
+    setProfile(prev => ({ ...prev, name: settingsName }))
+    setSettingsMsg('Name updated!')
+    setTimeout(() => setSettingsMsg(''), 2000)
+  }
+
+  const changePassword = async () => {
+    if (!newPass || newPass.length < 6) { setSettingsMsg('Password must be 6+ characters'); setTimeout(() => setSettingsMsg(''), 2000); return }
+    const { error } = await supabase.auth.updateUser({ password: newPass })
+    if (error) { setSettingsMsg(error.message) } else { setSettingsMsg('Password changed!'); setNewPass('') }
+    setTimeout(() => setSettingsMsg(''), 2000)
+  }
+
+  const deleteAccount = async () => {
+    if (user?.id !== 'guest') {
+      await supabase.from('meal_logs').delete().eq('user_id', user.id)
+      await supabase.from('profiles').delete().eq('id', user.id)
+      await supabase.auth.signOut()
+    }
+    setUser(null); setProfile(null); setDailyLog([]); setActiveTab('home'); setShowDeleteConfirm(false)
+  }
+
+  const loadHistory = async () => {
+    if (user?.id === 'guest') return
+    const { data } = await supabase.from('meal_logs').select('*').eq('user_id', user.id).order('logged_at', { ascending: false }).limit(50)
+    if (data) setMealHistory(data)
+  }
+
+  useEffect(() => { if (activeTab === 'settings') { setSettingsGoal(profile?.goal || 'maintain'); setSettingsName(profile?.name || ''); loadHistory() } }, [activeTab])
 
   useEffect(() => {
     setTimeout(() => setShowSplash(false), 2000)
@@ -206,7 +252,6 @@ function App() {
           </div>
           {dailyLog.length > 0 && (<div className="section"><h3 className="sec-title">Logged Today</h3>{dailyLog.map((m,i)=>(<div key={m.id||i} className="log-item"><div><div className="log-name">{m.item_name}</div><div className="log-meta">{m.hall} · {m.calories} cal · {m.protein}g protein</div></div><button className="log-remove" onClick={()=>removeFromLog(m)}>✕</button></div>))}<div className="log-total"><span>Total</span><span>{dailyTotals.calories} cal · {dailyTotals.protein}g P · {dailyTotals.carbs}g C · {dailyTotals.fat}g F</span></div></div>)}
           <div className="section"><h3 className="sec-title">Quick Actions</h3><div className="action-grid">{[{i:'📸',l:'Scan Meal',s:'AI identifies your food',t:'scan'},{i:'🔍',l:'Browse Menu',s:'All halls, live data',t:'search'},{i:'💬',l:'Ask Tiger',s:'Your nutrition homie',t:'chat'},{i:'💪',l:'High Protein',s:'Sorted by protein',t:'search',sort:'protein'}].map((a,idx)=>(<button key={idx} className="action-btn" onClick={()=>{if(a.sort)setSortBy(a.sort);setActiveTab(a.t)}}><span className="action-icon">{a.i}</span><span className="action-label">{a.l}</span><span className="action-sub">{a.s}</span></button>))}</div></div>
-          {user?.id !== 'guest' && <button className="btn-outline" style={{marginTop:8}} onClick={handleLogout}>Log Out</button>}
         </div>
       )}
 
@@ -248,6 +293,125 @@ function App() {
         </div>
       )}
 
+      {/* ─── SETTINGS ─── */}
+      {activeTab === 'settings' && (
+        <div className="fade-in">
+          <div className="tab-top"><h2>Settings</h2></div>
+
+          {settingsMsg && <div className="toast fade-in">{settingsMsg}</div>}
+
+          <div className="settings-section">
+            <div className="settings-profile-card">
+              <div className="settings-avatar">{(profile?.name || user?.email || '?')[0].toUpperCase()}</div>
+              <div>
+                <div className="settings-profile-name">{profile?.name || 'Tiger'}</div>
+                <div className="settings-profile-email">{user?.id === 'guest' ? 'Guest' : user?.email}</div>
+              </div>
+            </div>
+          </div>
+
+          {user?.id !== 'guest' && (
+            <div className="settings-section">
+              <h3 className="sec-title">Profile</h3>
+              <div className="settings-row">
+                <input type="text" placeholder="Your name" value={settingsName} onChange={e => setSettingsName(e.target.value)} className="auth-input" />
+                <button className="settings-save" onClick={updateName}>Save</button>
+              </div>
+            </div>
+          )}
+
+          <div className="settings-section">
+            <h3 className="sec-title">Nutrition Goal</h3>
+            <div className="goal-grid">
+              {[
+                { key: 'cut', icon: '🔥', label: 'Cut', desc: '1800 cal · 180g protein' },
+                { key: 'maintain', icon: '⚖️', label: 'Maintain', desc: '2200 cal · 150g protein' },
+                { key: 'bulk', icon: '💪', label: 'Bulk', desc: '2800 cal · 180g protein' },
+              ].map(g => (
+                <button key={g.key} className={'goal-btn' + (settingsGoal === g.key ? ' on' : '')} onClick={() => updateGoal(g.key)}>
+                  <span className="goal-icon">{g.icon}</span>
+                  <span className="goal-label">{g.label}</span>
+                  <span className="goal-desc">{g.desc}</span>
+                </button>
+              ))}
+            </div>
+            <div className="settings-macros">
+              <div className="sm-item"><span className="sm-label">Calories</span><span className="sm-val">{goals.calorie_goal}</span></div>
+              <div className="sm-item"><span className="sm-label">Protein</span><span className="sm-val">{goals.protein_goal}g</span></div>
+              <div className="sm-item"><span className="sm-label">Carbs</span><span className="sm-val">{goals.carbs_goal}g</span></div>
+              <div className="sm-item"><span className="sm-label">Fat</span><span className="sm-val">{goals.fat_goal}g</span></div>
+            </div>
+          </div>
+
+          {user?.id !== 'guest' && (
+            <div className="settings-section">
+              <h3 className="sec-title">Change Password</h3>
+              <div className="settings-row">
+                <input type="password" placeholder="New password" value={newPass} onChange={e => setNewPass(e.target.value)} className="auth-input" />
+                <button className="settings-save" onClick={changePassword}>Update</button>
+              </div>
+            </div>
+          )}
+
+          {mealHistory.length > 0 && (
+            <div className="settings-section">
+              <h3 className="sec-title">Recent Meal History</h3>
+              <div className="history-list">
+                {mealHistory.map((m, i) => {
+                  const d = new Date(m.logged_at)
+                  const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                  const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                  return (
+                    <div key={i} className="history-item">
+                      <div>
+                        <div className="log-name">{m.item_name}</div>
+                        <div className="log-meta">{m.hall} · {m.calories} cal · {dateStr} {timeStr}</div>
+                      </div>
+                      <div className="history-macros">
+                        <span className="mm-p">{m.protein}g P</span>
+                        <span className="mm-f">{m.fat}g F</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="settings-section">
+            <h3 className="sec-title">About</h3>
+            <div className="settings-about">
+              <div className="md-row"><span>Version</span><span>2.0.0</span></div>
+              <div className="md-row"><span>Built by</span><span>Sai Ganesh</span></div>
+              <div className="md-row"><span>Data source</span><span>Clemson MyDiningHub</span></div>
+            </div>
+          </div>
+
+          <div className="settings-section">
+            {user?.id !== 'guest' && (
+              <>
+                <button className="btn-outline" onClick={handleLogout}>Log Out</button>
+                <button className="btn-danger" onClick={() => setShowDeleteConfirm(true)}>Delete Account</button>
+              </>
+            )}
+            {user?.id === 'guest' && (
+              <button className="auth-btn" onClick={() => { setUser(null); setAuthMode('signup') }}>Create Account</button>
+            )}
+          </div>
+
+          {showDeleteConfirm && (
+            <div className="overlay" onClick={() => setShowDeleteConfirm(false)}>
+              <div className="modal fade-in" onClick={e => e.stopPropagation()} style={{ textAlign: 'center', padding: '32px 24px' }}>
+                <h2 style={{ fontSize: '1.1rem', marginBottom: 8 }}>Delete Account?</h2>
+                <p style={{ color: '#888', fontSize: '.85rem', marginBottom: 20 }}>This will permanently delete your account and all meal history. This can't be undone.</p>
+                <button className="btn-danger" onClick={deleteAccount}>Yes, Delete Everything</button>
+                <button className="btn-outline" style={{ marginTop: 8 }} onClick={() => setShowDeleteConfirm(false)}>Cancel</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {showDetail && (
         <div className="overlay" onClick={()=>{setShowDetail(null);setAlternatives([])}}>
           <div className="modal fade-in" onClick={e=>e.stopPropagation()}>
@@ -269,7 +433,7 @@ function App() {
       <nav className="bnav">
         {[{i:'🏠',l:'Home',t:'home'},{i:'🍽️',l:'Menu',t:'search'}].map(n=>(<button key={n.t} className={activeTab===n.t?'on':''} onClick={()=>setActiveTab(n.t)}><span className="ni">{n.i}</span><span className="nl">{n.l}</span></button>))}
         <button className={'scan-fab'+(activeTab==='scan'?' on':'')} onClick={()=>setActiveTab('scan')}><span>📸</span></button>
-        {[{i:'💬',l:'Tiger',t:'chat'},{i:'📊',l:'Log',t:'home'}].map(n=>(<button key={n.l} className={activeTab===n.t?'on':''} onClick={()=>setActiveTab(n.t)}><span className="ni">{n.i}</span><span className="nl">{n.l}</span></button>))}
+        {[{i:'💬',l:'Tiger',t:'chat'},{i:'👤',l:'Profile',t:'settings'}].map(n=>(<button key={n.l} className={activeTab===n.t?'on':''} onClick={()=>setActiveTab(n.t)}><span className="ni">{n.i}</span><span className="nl">{n.l}</span></button>))}
       </nav>
     </div>
   )
