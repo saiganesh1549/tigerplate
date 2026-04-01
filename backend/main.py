@@ -49,57 +49,67 @@ LOCATIONS = {
 }
 
 # Meal period IDs (from the site)
-MEAL_PERIODS = {
-    "breakfast": 23,
-    "lunch": 24,
-    "dinner": 25,
-}
+# Meal periods defined above with station names
 
 GRAPHQL_QUERY = """query getLocationRecipes($campusUrlKey:String!$locationUrlKey:String!$date:String!$mealPeriod:Int$viewType:Commerce_MenuViewType!){getLocationRecipes(campusUrlKey:$campusUrlKey locationUrlKey:$locationUrlKey date:$date mealPeriod:$mealPeriod viewType:$viewType){locationRecipesMap{skus stationSkuMap{id skus __typename}dateSkuMap{date stations{id skus{simple configurable{sku variants __typename}__typename}__typename}__typename}__typename}products{items{id name sku images{label roles url __typename}attributes{name value __typename}...on Catalog_SimpleProductView{price{final{amount{currency value __typename}__typename}__typename}__typename}...on Catalog_ComplexProductView{options{title values{id title ...on Catalog_ProductViewOptionValueProduct{product{name sku attributes{name value __typename}price{final{amount{value currency __typename}__typename}__typename}__typename}__typename}__typename}__typename}__typename}__typename}__typename}}}"""
 
-# Cache for auto-discovered station names
-station_name_cache = {}
+# Station names from Clemson's getLocation API (verified)
+STATION_NAMES = {
+    # Schilletter
+    1537: "Theme Meal",
+    1510: "Mongolian",
+    1501: "Comfort",
+    1522: "Destinations",
+    1525: "Grill",
+    1513: "Pizza",
+    1534: "Deli",
+    1504: "Salad Bar",
+    1528: "Soup",
+    1516: "Vegan",
+    1519: "True Balance",
+    1531: "Clean Eats",
+    1507: "Bakery",
+    # Douthit Hills (Community Hub)
+    1755: "Grill",
+    1758: "Fusion",
+    1761: "Salad",
+    1764: "Mezze",
+    1767: "Home Line",
+    1770: "Destinations",
+    1773: "Dessert",
+    1776: "Deli",
+    1779: "Pizza",
+    1782: "Soup",
+    # McAlister (The Dish)
+    699: "Main Ingredient",
+    1094: "Global Exchange",
+    513: "Umami",
+    504: "Under The Hood Omelet",
+    525: "Under The Hood 1",
+    507: "Under The Hood 2",
+    522: "Under The Hood 3",
+    1097: "Topping Bar",
+    540: "Trattoria Pizza",
+    528: "Trattoria Pasta & Stir-Fry",
+    516: "Sweet Pickles",
+    531: "Greens & Grains",
+    537: "Soup",
+    519: "Greens & Grains Breakfast",
+    696: "Fruit & Yogurt",
+    510: "Clean Eats",
+    702: "Vegan",
+    501: "Naked Food Station",
+    534: "Confectionery",
+    227073: "Confectionery",
+}
 
-
-async def fetch_station_names(location_url: str) -> dict:
-    """Auto-discover station names from the categories GraphQL API."""
-    if location_url in station_name_cache:
-        return station_name_cache[location_url]
-
-    query = '{Commerce_getCategories(campusUrlKey:"campus" locationUrlKey:"' + location_url + '"){items{id name urlKey children{id name urlKey children{id name urlKey __typename}__typename}__typename}__typename}}'
-    params = {
-        "query": query,
-        "extensions": json.dumps({"clientLibrary": {"name": "@apollo/client", "version": "4.1.6"}}),
-    }
-
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.get(GRAPHQL_URL, params=params, headers=GRAPHQL_HEADERS)
-            resp.raise_for_status()
-            data = resp.json()
-    except Exception as e:
-        print(f"  Error fetching categories for {location_url}: {e}")
-        return {}
-
-    names = {}
-    items = data.get("data", {}).get("Commerce_getCategories", {}).get("items", [])
-
-    def walk(cats):
-        for cat in cats:
-            cid = cat.get("id")
-            cname = cat.get("name", "")
-            if cid and cname:
-                try:
-                    names[int(cid)] = cname
-                except (ValueError, TypeError):
-                    pass
-            if cat.get("children"):
-                walk(cat["children"])
-
-    walk(items)
-    station_name_cache[location_url] = names
-    print(f"  Loaded {len(names)} station names for {location_url}")
-    return names
+# Meal period IDs (verified from API)
+MEAL_PERIODS = {
+    "breakfast": 10,
+    "brunch": 13,
+    "lunch": 25,
+    "dinner": 16,
+}
 
 
 def extract_attr(attributes: list, name: str) -> Optional[str]:
@@ -110,7 +120,7 @@ def extract_attr(attributes: list, name: str) -> Optional[str]:
     return None
 
 
-def parse_product(item: dict, hall: str, meal: str, station_id: int = None, station_names: dict = None) -> Optional[dict]:
+def parse_product(item: dict, hall: str, meal: str, station_id: int = None) -> Optional[dict]:
     """Parse a single product from the GraphQL response into a clean meal dict."""
     attrs = item.get("attributes", [])
     
@@ -154,8 +164,7 @@ def parse_product(item: dict, hall: str, meal: str, station_id: int = None, stat
     sat_fat = extract_attr(attrs, "saturated_fat")
     cholesterol = extract_attr(attrs, "cholesterol")
     
-    sn = station_names or {}
-    station_name = sn.get(station_id, "Other") if station_id else "Other"
+    station_name = STATION_NAMES.get(station_id, "") if station_id else ""
 
     return {
         "item_name": name.strip(),
@@ -215,9 +224,6 @@ async def fetch_menu(location_key: str, location_url: str, meal_name: str, meal_
         return []
     products = products_data.get("items", [])
     
-    # Fetch station names for this location
-    sn = await fetch_station_names(location_url)
-    
     # Build SKU -> station mapping
     sku_station = {}
     for station in loc_map.get("stationSkuMap", []):
@@ -255,7 +261,7 @@ async def fetch_menu(location_key: str, location_url: str, meal_name: str, meal_
             continue
         
         station_id = sku_station.get(sku)
-        parsed = parse_product(item, hall_display, meal_name, station_id, sn)
+        parsed = parse_product(item, hall_display, meal_name, station_id)
         
         if parsed and parsed["item_name"].lower() not in seen_names:
             seen_names.add(parsed["item_name"].lower())
