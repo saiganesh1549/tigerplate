@@ -413,17 +413,32 @@ async def get_healthier(
     if not current:
         return {"error": "Meal not found", "alternatives": []}
 
-    same_hall = [m for m in all_meals
-                 if m["hall"].lower() == current["hall"].lower()
-                 and m["meal"].lower() == current["meal"].lower()
-                 and m["item_name"].lower() != item_name.lower()
-                 and m["calories"] < current["calories"]]
+    cur_cal = current["calories"]
+    cur_pro = current["protein"]
     
-    same_hall.sort(key=lambda x: x["calories"], reverse=True)
+    # Find alternatives: same hall, same meal, fewer calories, skip tiny items
+    candidates = [m for m in all_meals
+                  if m["hall"].lower() == current["hall"].lower()
+                  and m["meal"].lower() == current["meal"].lower()
+                  and m["item_name"].lower() != item_name.lower()
+                  and m["calories"] < cur_cal
+                  and m["calories"] > 50]
+    
+    # Score by protein-per-calorie ratio + realistic swap quality
+    scored = []
+    for c in candidates:
+        pro_per_cal = (c["protein"] / max(c["calories"], 1)) * 100
+        cal_saved = cur_cal - c["calories"]
+        size_bonus = 20 if c["calories"] > 150 else 0
+        protein_bonus = 30 if c["protein"] >= cur_pro * 0.6 else 0
+        score = pro_per_cal + (cal_saved * 0.05) + size_bonus + protein_bonus
+        scored.append((score, c))
+    
+    scored.sort(key=lambda x: x[0], reverse=True)
 
     return {
         "current": current,
-        "alternatives": same_hall[:limit],
+        "alternatives": [c for _, c in scored[:limit]],
     }
 
 
