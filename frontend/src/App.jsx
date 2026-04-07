@@ -16,6 +16,13 @@ function App() {
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [profile, setProfile] = useState(null)
   const [onboardGoal, setOnboardGoal] = useState('maintain')
+  const [onboardStep, setOnboardStep] = useState(0)
+  const [onboardGender, setOnboardGender] = useState('')
+  const [onboardAge, setOnboardAge] = useState('')
+  const [onboardFt, setOnboardFt] = useState('')
+  const [onboardIn, setOnboardIn] = useState('')
+  const [onboardLbs, setOnboardLbs] = useState('')
+  const [onboardActivity, setOnboardActivity] = useState('moderate')
   const [meals, setMeals] = useState([])
   const [halls, setHalls] = useState([])
   const [selectedHall, setSelectedHall] = useState('')
@@ -101,17 +108,52 @@ function App() {
     setAuthLoading(false)
   }
 
+  const calculateMacros = (gender, age, heightCm, weightKg, activity, goal) => {
+    // Mifflin-St Jeor BMR
+    const bmr = gender === 'male'
+      ? 10 * weightKg + 6.25 * heightCm - 5 * age + 5
+      : 10 * weightKg + 6.25 * heightCm - 5 * age - 161
+    const activityMult = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, athlete: 1.9 }[activity] || 1.55
+    const tdee = bmr * activityMult
+    const goalAdjust = { cut: -500, maintain: 0, bulk: 400 }[goal] || 0
+    const cals = Math.round(tdee + goalAdjust)
+    // Protein: 1g per lb bodyweight (cut/bulk), 0.8g maintain
+    const proteinPerLb = goal === 'maintain' ? 0.8 : 1.0
+    const protein = Math.round(weightKg * 2.205 * proteinPerLb)
+    // Fat: 25% of calories
+    const fat = Math.round((cals * 0.25) / 9)
+    // Carbs: remainder
+    const carbs = Math.round((cals - (protein * 4) - (fat * 9)) / 4)
+    return { calorie_goal: cals, protein_goal: protein, carbs_goal: carbs, fat_goal: fat }
+  }
+
   const handleOnboarding = async () => {
-    const macros = { cut: { calorie_goal: 1800, protein_goal: 180, carbs_goal: 150, fat_goal: 60 }, maintain: { calorie_goal: 2200, protein_goal: 150, carbs_goal: 250, fat_goal: 70 }, bulk: { calorie_goal: 2800, protein_goal: 180, carbs_goal: 350, fat_goal: 80 } }[onboardGoal]
-    await supabase.from('profiles').update({ name: authName || null, goal: onboardGoal, ...macros }).eq('id', user.id)
-    setProfile({ ...profile, name: authName, goal: onboardGoal, ...macros })
+    const heightCm = Math.round((parseInt(onboardFt) * 12 + parseInt(onboardIn)) * 2.54)
+    const weightKg = parseFloat(onboardLbs) / 2.205
+    const macros = calculateMacros(onboardGender, parseInt(onboardAge), heightCm, weightKg, onboardActivity, onboardGoal)
+    await supabase.from('profiles').update({
+      name: authName || null,
+      goal: onboardGoal,
+      gender: onboardGender,
+      age: parseInt(onboardAge),
+      height_cm: heightCm,
+      weight_kg: weightKg,
+      activity: onboardActivity,
+      ...macros
+    }).eq('id', user.id)
+    setProfile({ ...profile, name: authName, goal: onboardGoal, gender: onboardGender, age: parseInt(onboardAge), height_cm: heightCm, weight_kg: weightKg, activity: onboardActivity, ...macros })
     setAuthMode('done')
   }
 
   const handleLogout = async () => { await supabase.auth.signOut(); setUser(null); setProfile(null); setDailyLog([]); setActiveTab('home') }
 
   const updateGoal = async (newGoal) => {
-    const macros = { cut: { calorie_goal: 1800, protein_goal: 180, carbs_goal: 150, fat_goal: 60 }, maintain: { calorie_goal: 2200, protein_goal: 150, carbs_goal: 250, fat_goal: 70 }, bulk: { calorie_goal: 2800, protein_goal: 180, carbs_goal: 350, fat_goal: 80 } }[newGoal]
+    let macros
+    if (profile?.height_cm && profile?.weight_kg && profile?.age && profile?.gender) {
+      macros = calculateMacros(profile.gender, profile.age, profile.height_cm, profile.weight_kg, profile.activity || 'moderate', newGoal)
+    } else {
+      macros = { cut: { calorie_goal: 1800, protein_goal: 180, carbs_goal: 150, fat_goal: 60 }, maintain: { calorie_goal: 2200, protein_goal: 150, carbs_goal: 250, fat_goal: 70 }, bulk: { calorie_goal: 2800, protein_goal: 180, carbs_goal: 350, fat_goal: 80 } }[newGoal]
+    }
     if (user?.id !== 'guest') { await supabase.from('profiles').update({ goal: newGoal, ...macros }).eq('id', user.id) }
     setProfile(prev => ({ ...prev, goal: newGoal, ...macros }))
     setSettingsGoal(newGoal)
@@ -223,21 +265,89 @@ function App() {
     </div>
   )
 
-  if (user && user.id !== 'guest' && profile && !profile.goal) return (
+  if (user && user.id !== 'guest' && profile && !profile.goal) {
+    const steps = ['name', 'gender', 'age', 'height', 'weight', 'activity', 'goal']
+    const currentStep = steps[onboardStep]
+    const canAdvance = () => {
+      if (currentStep === 'name') return true
+      if (currentStep === 'gender') return !!onboardGender
+      if (currentStep === 'age') return parseInt(onboardAge) >= 13 && parseInt(onboardAge) <= 100
+      if (currentStep === 'height') return parseInt(onboardFt) >= 3 && parseInt(onboardFt) <= 8
+      if (currentStep === 'weight') return parseFloat(onboardLbs) >= 50 && parseFloat(onboardLbs) <= 500
+      if (currentStep === 'activity') return !!onboardActivity
+      return true
+    }
+    return (
     <div className="app auth-page">
-      <div className="auth-header"><div className="splash-icon">🐾</div><h1 className="home-title">Tiger<span>Plate</span></h1><p className="auth-sub">let's set up your goals</p></div>
+      <div className="auth-header"><div className="splash-icon">🐾</div><h1 className="home-title">Tiger<span>Plate</span></h1><p className="auth-sub">step {onboardStep + 1} of {steps.length}</p></div>
+      <div className="onboard-progress"><div className="onboard-bar" style={{width: ((onboardStep + 1) / steps.length * 100) + '%'}}></div></div>
       <div className="auth-card">
-        <input type="text" placeholder="Your name (optional)" value={authName} onChange={e=>setAuthName(e.target.value)} className="auth-input" />
-        <p className="onboard-q">What's your goal?</p>
-        <div className="goal-grid">
-          {[{key:'cut',icon:'🔥',label:'Cut',desc:'1800 cal · high protein'},{key:'maintain',icon:'⚖️',label:'Maintain',desc:'2200 cal · balanced'},{key:'bulk',icon:'💪',label:'Bulk',desc:'2800 cal · high carbs'}].map(g=>(
-            <button key={g.key} className={'goal-btn'+(onboardGoal===g.key?' on':'')} onClick={()=>setOnboardGoal(g.key)}><span className="goal-icon">{g.icon}</span><span className="goal-label">{g.label}</span><span className="goal-desc">{g.desc}</span></button>
-          ))}
+        {currentStep === 'name' && (<>
+          <p className="onboard-q">What should we call you?</p>
+          <input type="text" placeholder="Your name (or leave blank)" value={authName} onChange={e=>setAuthName(e.target.value)} className="auth-input" autoFocus />
+        </>)}
+        {currentStep === 'gender' && (<>
+          <p className="onboard-q">Gender</p>
+          <p className="onboard-sub">For accurate calorie calculations</p>
+          <div className="goal-grid">
+            {[{key:'male',icon:'♂️',label:'Male'},{key:'female',icon:'♀️',label:'Female'}].map(g=>(
+              <button key={g.key} className={'goal-btn'+(onboardGender===g.key?' on':'')} onClick={()=>setOnboardGender(g.key)}>
+                <span className="goal-icon">{g.icon}</span><span className="goal-label">{g.label}</span>
+              </button>
+            ))}
+          </div>
+        </>)}
+        {currentStep === 'age' && (<>
+          <p className="onboard-q">How old are you?</p>
+          <input type="number" placeholder="Age" value={onboardAge} onChange={e=>setOnboardAge(e.target.value)} className="auth-input big-num" autoFocus />
+        </>)}
+        {currentStep === 'height' && (<>
+          <p className="onboard-q">How tall are you?</p>
+          <div className="height-row">
+            <div className="hr-input"><input type="number" placeholder="5" value={onboardFt} onChange={e=>setOnboardFt(e.target.value)} className="auth-input big-num" autoFocus /><span>ft</span></div>
+            <div className="hr-input"><input type="number" placeholder="10" value={onboardIn} onChange={e=>setOnboardIn(e.target.value)} className="auth-input big-num" /><span>in</span></div>
+          </div>
+        </>)}
+        {currentStep === 'weight' && (<>
+          <p className="onboard-q">What's your weight?</p>
+          <div className="hr-input"><input type="number" placeholder="160" value={onboardLbs} onChange={e=>setOnboardLbs(e.target.value)} className="auth-input big-num" autoFocus /><span>lbs</span></div>
+        </>)}
+        {currentStep === 'activity' && (<>
+          <p className="onboard-q">Activity level</p>
+          <p className="onboard-sub">Be honest — this matters</p>
+          <div className="goal-grid">
+            {[
+              {key:'sedentary',icon:'🛋️',label:'Sedentary',desc:'Little or no exercise'},
+              {key:'light',icon:'🚶',label:'Light',desc:'1-3 days a week'},
+              {key:'moderate',icon:'🏃',label:'Moderate',desc:'3-5 days a week'},
+              {key:'active',icon:'💪',label:'Active',desc:'6-7 days a week'},
+              {key:'athlete',icon:'🔥',label:'Athlete',desc:'Twice a day, intense'},
+            ].map(a=>(
+              <button key={a.key} className={'goal-btn'+(onboardActivity===a.key?' on':'')} onClick={()=>setOnboardActivity(a.key)}>
+                <span className="goal-icon">{a.icon}</span><span className="goal-label">{a.label}</span><span className="goal-desc">{a.desc}</span>
+              </button>
+            ))}
+          </div>
+        </>)}
+        {currentStep === 'goal' && (<>
+          <p className="onboard-q">What's your goal?</p>
+          <div className="goal-grid">
+            {[{key:'cut',icon:'🔥',label:'Cut',desc:'Lose fat (-500 cal)'},{key:'maintain',icon:'⚖️',label:'Maintain',desc:'Stay where you are'},{key:'bulk',icon:'💪',label:'Bulk',desc:'Build muscle (+400 cal)'}].map(g=>(
+              <button key={g.key} className={'goal-btn'+(onboardGoal===g.key?' on':'')} onClick={()=>setOnboardGoal(g.key)}>
+                <span className="goal-icon">{g.icon}</span><span className="goal-label">{g.label}</span><span className="goal-desc">{g.desc}</span>
+              </button>
+            ))}
+          </div>
+        </>)}
+        <div className="onboard-nav">
+          {onboardStep > 0 && <button className="btn-outline" onClick={()=>setOnboardStep(s=>s-1)}>← Back</button>}
+          {onboardStep < steps.length - 1 && <button className="auth-btn" disabled={!canAdvance()} onClick={()=>setOnboardStep(s=>s+1)}>Next →</button>}
+          {onboardStep === steps.length - 1 && <button className="auth-btn" onClick={handleOnboarding}>Calculate My Macros 🎯</button>}
         </div>
-        <button className="auth-btn" onClick={handleOnboarding}>Let's go →</button>
       </div>
     </div>
-  )
+    )
+  }
 
   return (
     <div className="app">
@@ -293,84 +403,93 @@ function App() {
         </div>
       )}
 
-      {/* ─── SETTINGS ─── */}
+      {/* ─── PROFILE ─── */}
       {activeTab === 'settings' && (
         <div className="fade-in">
-          <div className="tab-top"><h2>Settings</h2></div>
-
           {settingsMsg && <div className="toast fade-in">{settingsMsg}</div>}
 
-          <div className="settings-section">
-            <div className="settings-profile-card">
-              <div className="settings-avatar">{(profile?.name || user?.email || '?')[0].toUpperCase()}</div>
-              <div>
-                <div className="settings-profile-name">{profile?.name || 'Tiger'}</div>
-                <div className="settings-profile-email">{user?.id === 'guest' ? 'Guest' : user?.email}</div>
-              </div>
+          {/* Hero profile card */}
+          <div className="prof-hero">
+            <div className="prof-hero-bg"></div>
+            <div className="prof-avatar-lg">{(profile?.name || user?.email || '?')[0].toUpperCase()}</div>
+            <h2 className="prof-name">{profile?.name || 'Tiger'}</h2>
+            <p className="prof-email">{user?.id === 'guest' ? 'Guest Mode' : user?.email}</p>
+            <div className="prof-badge-row">
+              <span className="prof-badge">{profile?.goal === 'cut' ? '🔥 Cutting' : profile?.goal === 'bulk' ? '💪 Bulking' : '⚖️ Maintaining'}</span>
+              <span className="prof-badge">🐾 Clemson</span>
             </div>
           </div>
 
-          {user?.id !== 'guest' && (
-            <div className="settings-section">
-              <h3 className="sec-title">Profile</h3>
-              <div className="settings-row">
-                <input type="text" placeholder="Your name" value={settingsName} onChange={e => setSettingsName(e.target.value)} className="auth-input" />
-                <button className="settings-save" onClick={updateName}>Save</button>
-              </div>
+          {/* Stats row */}
+          <div className="prof-stats">
+            <div className="ps-item">
+              <span className="ps-num">{mealHistory.length}</span>
+              <span className="ps-label">Meals Logged</span>
             </div>
-          )}
+            <div className="ps-divider"></div>
+            <div className="ps-item">
+              <span className="ps-num">{goals.calorie_goal}</span>
+              <span className="ps-label">Daily Cal Goal</span>
+            </div>
+            <div className="ps-divider"></div>
+            <div className="ps-item">
+              <span className="ps-num">{goals.protein_goal}g</span>
+              <span className="ps-label">Protein Goal</span>
+            </div>
+          </div>
 
-          <div className="settings-section">
-            <h3 className="sec-title">Nutrition Goal</h3>
-            <div className="goal-grid">
+          {/* Macro targets visual */}
+          <div className="prof-macros-card">
+            <h3 className="prof-section-title">Daily Targets</h3>
+            <div className="prof-macro-bars">
               {[
-                { key: 'cut', icon: '🔥', label: 'Cut', desc: '1800 cal · 180g protein' },
-                { key: 'maintain', icon: '⚖️', label: 'Maintain', desc: '2200 cal · 150g protein' },
-                { key: 'bulk', icon: '💪', label: 'Bulk', desc: '2800 cal · 180g protein' },
+                { l: 'Calories', v: goals.calorie_goal, max: 3000, c: '#F56600', unit: '' },
+                { l: 'Protein', v: goals.protein_goal, max: 200, c: '#22c55e', unit: 'g' },
+                { l: 'Carbs', v: goals.carbs_goal, max: 400, c: '#f59e0b', unit: 'g' },
+                { l: 'Fat', v: goals.fat_goal, max: 100, c: '#ef4444', unit: 'g' },
+              ].map((m, i) => (
+                <div key={i} className="pmb-row">
+                  <span className="pmb-label">{m.l}</span>
+                  <div className="pmb-track"><div className="pmb-fill" style={{ width: (m.v / m.max * 100) + '%', background: m.c }}></div></div>
+                  <span className="pmb-val" style={{ color: m.c }}>{m.v}{m.unit}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Goal selector */}
+          <div className="prof-card">
+            <h3 className="prof-section-title">Change Goal</h3>
+            <div className="prof-goal-pills">
+              {[
+                { key: 'cut', icon: '🔥', label: 'Cut' },
+                { key: 'maintain', icon: '⚖️', label: 'Maintain' },
+                { key: 'bulk', icon: '💪', label: 'Bulk' },
               ].map(g => (
-                <button key={g.key} className={'goal-btn' + (settingsGoal === g.key ? ' on' : '')} onClick={() => updateGoal(g.key)}>
-                  <span className="goal-icon">{g.icon}</span>
-                  <span className="goal-label">{g.label}</span>
-                  <span className="goal-desc">{g.desc}</span>
+                <button key={g.key} className={'pgp' + (settingsGoal === g.key ? ' on' : '')} onClick={() => updateGoal(g.key)}>
+                  <span>{g.icon}</span><span>{g.label}</span>
                 </button>
               ))}
             </div>
-            <div className="settings-macros">
-              <div className="sm-item"><span className="sm-label">Calories</span><span className="sm-val">{goals.calorie_goal}</span></div>
-              <div className="sm-item"><span className="sm-label">Protein</span><span className="sm-val">{goals.protein_goal}g</span></div>
-              <div className="sm-item"><span className="sm-label">Carbs</span><span className="sm-val">{goals.carbs_goal}g</span></div>
-              <div className="sm-item"><span className="sm-label">Fat</span><span className="sm-val">{goals.fat_goal}g</span></div>
-            </div>
           </div>
 
-          {user?.id !== 'guest' && (
-            <div className="settings-section">
-              <h3 className="sec-title">Change Password</h3>
-              <div className="settings-row">
-                <input type="password" placeholder="New password" value={newPass} onChange={e => setNewPass(e.target.value)} className="auth-input" />
-                <button className="settings-save" onClick={changePassword}>Update</button>
-              </div>
-            </div>
-          )}
-
+          {/* Recent meals */}
           {mealHistory.length > 0 && (
-            <div className="settings-section">
-              <h3 className="sec-title">Recent Meal History</h3>
-              <div className="history-list">
-                {mealHistory.map((m, i) => {
+            <div className="prof-card">
+              <h3 className="prof-section-title">Recent Activity</h3>
+              <div className="prof-history">
+                {mealHistory.slice(0, 10).map((m, i) => {
                   const d = new Date(m.logged_at)
                   const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                   const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
                   return (
-                    <div key={i} className="history-item">
-                      <div>
-                        <div className="log-name">{m.item_name}</div>
-                        <div className="log-meta">{m.hall} · {m.calories} cal · {dateStr} {timeStr}</div>
+                    <div key={i} className="ph-item">
+                      <div className="ph-dot" style={{ background: m.calories > goals.calorie_goal * 0.3 ? '#F56600' : '#22c55e' }}></div>
+                      <div className="ph-info">
+                        <div className="ph-name">{m.item_name}</div>
+                        <div className="ph-meta">{m.hall} · {dateStr} · {timeStr}</div>
                       </div>
-                      <div className="history-macros">
-                        <span className="mm-p">{m.protein}g P</span>
-                        <span className="mm-f">{m.fat}g F</span>
-                      </div>
+                      <div className="ph-cals">{m.calories}<small>cal</small></div>
                     </div>
                   )
                 })}
@@ -378,32 +497,58 @@ function App() {
             </div>
           )}
 
-          <div className="settings-section">
-            <h3 className="sec-title">About</h3>
-            <div className="settings-about">
-              <div className="md-row"><span>Version</span><span>2.0.0</span></div>
-              <div className="md-row"><span>Built by</span><span>Sai Ganesh</span></div>
-              <div className="md-row"><span>Data source</span><span>Clemson MyDiningHub</span></div>
+          {/* Account settings */}
+          <div className="prof-card">
+            <h3 className="prof-section-title">Account</h3>
+            {user?.id !== 'guest' && (
+              <>
+                <div className="prof-field">
+                  <label>Display Name</label>
+                  <div className="settings-row">
+                    <input type="text" placeholder="Your name" value={settingsName} onChange={e => setSettingsName(e.target.value)} className="auth-input" />
+                    <button className="settings-save" onClick={updateName}>Save</button>
+                  </div>
+                </div>
+                <div className="prof-field">
+                  <label>Password</label>
+                  <div className="settings-row">
+                    <input type="password" placeholder="New password" value={newPass} onChange={e => setNewPass(e.target.value)} className="auth-input" />
+                    <button className="settings-save" onClick={changePassword}>Update</button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* About */}
+          <div className="prof-card">
+            <h3 className="prof-section-title">About TigerPlate</h3>
+            <div className="prof-about">
+              <div className="pa-row"><span>Version</span><span>2.0.0</span></div>
+              <div className="pa-row"><span>Data</span><span>Live from Clemson Dining</span></div>
+              <div className="pa-row"><span>AI</span><span>Gemini 2.5 Flash</span></div>
+              <div className="pa-row"><span>Built by</span><span style={{ color: 'var(--o)' }}>Sai Ganesh</span></div>
             </div>
           </div>
 
-          <div className="settings-section">
-            {user?.id !== 'guest' && (
+          {/* Actions */}
+          <div className="prof-actions">
+            {user?.id !== 'guest' ? (
               <>
-                <button className="btn-outline" onClick={handleLogout}>Log Out</button>
-                <button className="btn-danger" onClick={() => setShowDeleteConfirm(true)}>Delete Account</button>
+                <button className="prof-logout" onClick={handleLogout}>Log Out</button>
+                <button className="prof-delete" onClick={() => setShowDeleteConfirm(true)}>Delete Account</button>
               </>
-            )}
-            {user?.id === 'guest' && (
-              <button className="auth-btn" onClick={() => { setUser(null); setAuthMode('signup') }}>Create Account</button>
+            ) : (
+              <button className="auth-btn" onClick={() => { setUser(null); setAuthMode('signup') }}>Create Account to Save Progress</button>
             )}
           </div>
 
           {showDeleteConfirm && (
             <div className="overlay" onClick={() => setShowDeleteConfirm(false)}>
               <div className="modal fade-in" onClick={e => e.stopPropagation()} style={{ textAlign: 'center', padding: '32px 24px' }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>⚠️</div>
                 <h2 style={{ fontSize: '1.1rem', marginBottom: 8 }}>Delete Account?</h2>
-                <p style={{ color: '#888', fontSize: '.85rem', marginBottom: 20 }}>This will permanently delete your account and all meal history. This can't be undone.</p>
+                <p style={{ color: '#888', fontSize: '.8rem', marginBottom: 20, lineHeight: 1.5 }}>This permanently deletes your account, meal history, and all data. This can't be undone.</p>
                 <button className="btn-danger" onClick={deleteAccount}>Yes, Delete Everything</button>
                 <button className="btn-outline" style={{ marginTop: 8 }} onClick={() => setShowDeleteConfirm(false)}>Cancel</button>
               </div>
