@@ -296,6 +296,15 @@ body{background:var(--bg);color:var(--t);font-family:'Outfit',sans-serif;-webkit
 .pick-cal{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:800;color:var(--o);flex-shrink:0;text-align:right}
 .pick-cal small{display:block;font-size:.5rem;color:var(--td);font-weight:600}
 
+/* USER STATS GRID */
+.ps-num small{font-size:.65rem;margin-left:2px}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat-tile{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.02);border:1px solid var(--cb);border-radius:12px;padding:12px;transition:all .2s}
+.stat-tile:hover{border-color:rgba(245,102,0,0.2)}
+.st-icon{font-size:1.4rem;flex-shrink:0}
+.st-val{font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:800;color:var(--o)}
+.st-label{font-size:.55rem;color:var(--td);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-top:1px}
+
 /* PROFILE PAGE */
 .prof-hero{position:relative;text-align:center;padding:40px 20px 24px;margin:-0px -16px 16px;overflow:hidden;border-radius:0 0 24px 24px}
 .prof-hero-bg{position:absolute;inset:0;background:linear-gradient(180deg,rgba(245,102,0,0.12) 0%,rgba(245,102,0,0) 100%);pointer-events:none}

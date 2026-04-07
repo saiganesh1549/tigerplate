@@ -50,6 +50,7 @@ function App() {
   const [newPass, setNewPass] = useState('')
   const [settingsMsg, setSettingsMsg] = useState('')
   const [mealHistory, setMealHistory] = useState([])
+  const [userStats, setUserStats] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const fileInputRef = useRef(null)
   const chatEndRef = useRef(null)
@@ -186,8 +187,52 @@ function App() {
 
   const loadHistory = async () => {
     if (user?.id === 'guest') return
-    const { data } = await supabase.from('meal_logs').select('*').eq('user_id', user.id).order('logged_at', { ascending: false }).limit(50)
-    if (data) setMealHistory(data)
+    const { data } = await supabase.from('meal_logs').select('*').eq('user_id', user.id).order('logged_at', { ascending: false }).limit(500)
+    if (data) {
+      setMealHistory(data.slice(0, 50))
+      
+      // Calculate stats
+      const totalMeals = data.length
+      const totalCal = data.reduce((s, m) => s + (m.calories || 0), 0)
+      const totalPro = data.reduce((s, m) => s + (m.protein || 0), 0)
+      const avgCal = totalMeals > 0 ? Math.round(totalCal / totalMeals) : 0
+      
+      // Days logged (unique dates)
+      const uniqueDays = new Set(data.map(m => m.logged_at?.split('T')[0])).size
+      const avgCalPerDay = uniqueDays > 0 ? Math.round(totalCal / uniqueDays) : 0
+      const avgProPerDay = uniqueDays > 0 ? Math.round(totalPro / uniqueDays) : 0
+      
+      // Current streak — consecutive days with at least one logged meal, ending today or yesterday
+      const dateSet = new Set(data.map(m => m.logged_at?.split('T')[0]))
+      let streak = 0
+      const today = new Date()
+      let checkDate = new Date(today)
+      // Allow streak to start from today or yesterday
+      const todayStr = today.toISOString().split('T')[0]
+      const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
+      const yesterdayStr = yesterday.toISOString().split('T')[0]
+      if (!dateSet.has(todayStr) && !dateSet.has(yesterdayStr)) {
+        streak = 0
+      } else {
+        if (!dateSet.has(todayStr)) checkDate = yesterday
+        while (dateSet.has(checkDate.toISOString().split('T')[0])) {
+          streak++
+          checkDate.setDate(checkDate.getDate() - 1)
+        }
+      }
+      
+      // Top hall and top item
+      const hallCount = {}
+      const itemCount = {}
+      data.forEach(m => {
+        hallCount[m.hall] = (hallCount[m.hall] || 0) + 1
+        itemCount[m.item_name] = (itemCount[m.item_name] || 0) + 1
+      })
+      const topHall = Object.entries(hallCount).sort((a, b) => b[1] - a[1])[0]?.[0] || '—'
+      const topItem = Object.entries(itemCount).sort((a, b) => b[1] - a[1])[0]?.[0] || '—'
+      
+      setUserStats({ totalMeals, avgCal, avgCalPerDay, avgProPerDay, streak, totalPro, uniqueDays, topHall, topItem })
+    }
   }
 
   useEffect(() => { if (activeTab === 'settings') { setSettingsGoal(profile?.goal || 'maintain'); setSettingsName(profile?.name || ''); loadHistory() } }, [activeTab])
@@ -458,23 +503,59 @@ function App() {
             </div>
           </div>
 
-          {/* Stats row */}
+          {/* Stats grid */}
           <div className="prof-stats">
             <div className="ps-item">
-              <span className="ps-num">{mealHistory.length}</span>
+              <span className="ps-num">{userStats?.streak || 0}<small>🔥</small></span>
+              <span className="ps-label">Day Streak</span>
+            </div>
+            <div className="ps-divider"></div>
+            <div className="ps-item">
+              <span className="ps-num">{userStats?.totalMeals || 0}</span>
               <span className="ps-label">Meals Logged</span>
             </div>
             <div className="ps-divider"></div>
             <div className="ps-item">
-              <span className="ps-num">{goals.calorie_goal}</span>
-              <span className="ps-label">Daily Cal Goal</span>
-            </div>
-            <div className="ps-divider"></div>
-            <div className="ps-item">
-              <span className="ps-num">{goals.protein_goal}g</span>
-              <span className="ps-label">Protein Goal</span>
+              <span className="ps-num">{userStats?.uniqueDays || 0}</span>
+              <span className="ps-label">Days Tracked</span>
             </div>
           </div>
+
+          {userStats && userStats.totalMeals > 0 && (
+            <div className="prof-card">
+              <h3 className="prof-section-title">Your Stats</h3>
+              <div className="stats-grid">
+                <div className="stat-tile">
+                  <span className="st-icon">📊</span>
+                  <div>
+                    <div className="st-val">{userStats.avgCalPerDay}</div>
+                    <div className="st-label">avg cal / day</div>
+                  </div>
+                </div>
+                <div className="stat-tile">
+                  <span className="st-icon">💪</span>
+                  <div>
+                    <div className="st-val">{userStats.avgProPerDay}g</div>
+                    <div className="st-label">avg protein / day</div>
+                  </div>
+                </div>
+                <div className="stat-tile">
+                  <span className="st-icon">🏛️</span>
+                  <div>
+                    <div className="st-val" style={{fontSize:'.85rem'}}>{userStats.topHall}</div>
+                    <div className="st-label">favorite hall</div>
+                  </div>
+                </div>
+                <div className="stat-tile">
+                  <span className="st-icon">🍽️</span>
+                  <div>
+                    <div className="st-val" style={{fontSize:'.75rem',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{userStats.topItem}</div>
+                    <div className="st-label">most logged</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Macro targets visual */}
           <div className="prof-macros-card">
