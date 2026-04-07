@@ -52,6 +52,8 @@ function App() {
   const [mealHistory, setMealHistory] = useState([])
   const [userStats, setUserStats] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [allRatings, setAllRatings] = useState({})
+  const [myRatings, setMyRatings] = useState({})
   const fileInputRef = useRef(null)
   const chatEndRef = useRef(null)
 
@@ -237,6 +239,52 @@ function App() {
 
   useEffect(() => { if (activeTab === 'settings') { setSettingsGoal(profile?.goal || 'maintain'); setSettingsName(profile?.name || ''); loadHistory() } }, [activeTab])
 
+  // Load all ratings (community averages) and user's own ratings
+  const loadRatings = async () => {
+    const { data: all } = await supabase.from('ratings').select('item_name, rating')
+    if (all) {
+      const agg = {}
+      all.forEach(r => {
+        if (!agg[r.item_name]) agg[r.item_name] = { sum: 0, count: 0 }
+        agg[r.item_name].sum += r.rating
+        agg[r.item_name].count += 1
+      })
+      const result = {}
+      Object.entries(agg).forEach(([k, v]) => { result[k] = { avg: v.sum / v.count, count: v.count } })
+      setAllRatings(result)
+    }
+    if (user && user.id !== 'guest') {
+      const { data: mine } = await supabase.from('ratings').select('item_name, rating').eq('user_id', user.id)
+      if (mine) {
+        const m = {}
+        mine.forEach(r => { m[r.item_name] = r.rating })
+        setMyRatings(m)
+      }
+    }
+  }
+
+  useEffect(() => { if (user) loadRatings() }, [user])
+
+  const submitRating = async (itemName, hall, rating) => {
+    if (!user || user.id === 'guest') { setLogToast('Sign up to rate meals'); setTimeout(()=>setLogToast(null),2000); return }
+    setMyRatings(prev => ({ ...prev, [itemName]: rating }))
+    // Update local community average optimistically
+    setAllRatings(prev => {
+      const existing = prev[itemName] || { avg: 0, count: 0 }
+      const oldMine = myRatings[itemName]
+      let newSum, newCount
+      if (oldMine) {
+        newSum = (existing.avg * existing.count) - oldMine + rating
+        newCount = existing.count
+      } else {
+        newSum = (existing.avg * existing.count) + rating
+        newCount = existing.count + 1
+      }
+      return { ...prev, [itemName]: { avg: newSum / newCount, count: newCount } }
+    })
+    await supabase.from('ratings').upsert({ user_id: user.id, item_name: itemName, hall, rating }, { onConflict: 'user_id,item_name' })
+  }
+
   useEffect(() => {
     setTimeout(() => setShowSplash(false), 2000)
     axios.get(API + '/halls').then(r => setHalls(r.data.halls)).catch(() => {})
@@ -290,6 +338,33 @@ function App() {
   }
 
   const chatSuggestions = ["what's the best high protein option rn?", "what should i eat at schilletter tonight?", "i'm trying to cut, what's low calorie?", "what's the healthiest thing at douthit?"]
+
+  const StarRating = ({ itemName, hall, size = 'lg' }) => {
+    const myRating = myRatings[itemName] || 0
+    const community = allRatings[itemName]
+    return (
+      <div className="rating-block">
+        <div className="rating-row">
+          <span className="rating-label">Your rating</span>
+          <div className={'stars ' + size}>
+            {[1,2,3,4,5].map(n => (
+              <button key={n} className={'star' + (n <= myRating ? ' on' : '')} onClick={(e) => { e.stopPropagation(); submitRating(itemName, hall, n) }}>★</button>
+            ))}
+          </div>
+        </div>
+        {community && community.count > 0 && (
+          <div className="rating-row">
+            <span className="rating-label">Community</span>
+            <div className="community-rating">
+              <span className="cr-stars">{'★'.repeat(Math.round(community.avg))}{'☆'.repeat(5 - Math.round(community.avg))}</span>
+              <span className="cr-num">{community.avg.toFixed(1)}</span>
+              <span className="cr-count">({community.count})</span>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   if (showSplash) return (<div className="splash"><div className="splash-bg"></div><div className="splash-content"><div className="splash-icon">🐾</div><h1>Tiger<span>Plate</span></h1><p>eat smarter at clemson</p><div className="splash-loader"><div className="splash-bar"></div></div></div></div>)
   if (checkingAuth) return (<div className="splash"><div className="splash-content"><div className="splash-icon">🐾</div><p>Loading...</p></div></div>)
@@ -460,7 +535,7 @@ function App() {
             {(()=>{const grouped={};meals.forEach(m=>{const h=m.hall||'Other',s=m.station||'';if(!grouped[h])grouped[h]={};if(!grouped[h][s])grouped[h][s]=[];grouped[h][s].push(m)});let idx=0
               return Object.entries(grouped).map(([hall,stations])=>(<div key={hall} className="hall-group"><div className="hall-header"><span className="hall-name">{hall}</span><span className="hall-count">{Object.values(stations).flat().length} items</span></div>
                 {Object.entries(stations).map(([station,items])=>(<div key={station} className="station-group">{station&&<div className="station-header">{station}</div>}
-                  {items.map(m=>{const i=idx++;return(<div key={i} className="mcard" style={{animationDelay:Math.min(i*0.02,0.4)+'s'}}><div className="mcard-top" onClick={()=>getHealthier(m)}><div><div className="mcard-name">{m.item_name}</div>{m.description&&<div className="mcard-desc">{m.description}</div>}</div><div className="mcard-cal">{m.calories}<small>cal</small></div></div><div className="mcard-bar"><div className="mb-p" style={{flex:m.protein||1}}></div><div className="mb-c" style={{flex:m.carbs||1}}></div><div className="mb-f" style={{flex:m.fat||1}}></div></div><div className="mcard-bottom"><div className="mcard-macros"><span className="mm-p">{m.protein}g P</span><span className="mm-c">{m.carbs}g C</span><span className="mm-f">{m.fat}g F</span></div><button className="mcard-log" onClick={e=>{e.stopPropagation();addToLog(m)}}>+ Log</button></div></div>)})}</div>))}
+                  {items.map(m=>{const i=idx++;const cr=allRatings[m.item_name];return(<div key={i} className="mcard" style={{animationDelay:Math.min(i*0.02,0.4)+'s'}}><div className="mcard-top" onClick={()=>getHealthier(m)}><div><div className="mcard-name">{m.item_name}{cr&&cr.count>0&&<span className="inline-rating">★ {cr.avg.toFixed(1)}</span>}</div>{m.description&&<div className="mcard-desc">{m.description}</div>}</div><div className="mcard-cal">{m.calories}<small>cal</small></div></div><div className="mcard-bar"><div className="mb-p" style={{flex:m.protein||1}}></div><div className="mb-c" style={{flex:m.carbs||1}}></div><div className="mb-f" style={{flex:m.fat||1}}></div></div><div className="mcard-bottom"><div className="mcard-macros"><span className="mm-p">{m.protein}g P</span><span className="mm-c">{m.carbs}g C</span><span className="mm-f">{m.fat}g F</span></div><button className="mcard-log" onClick={e=>{e.stopPropagation();addToLog(m)}}>+ Log</button></div></div>)})}</div>))}
               </div>))})()}
           </div>
         </div>
@@ -688,6 +763,7 @@ function App() {
             <div className="modal-rings">{[{v:showDetail.protein,m:50,c:'#22c55e',l:'Protein'},{v:showDetail.carbs,m:80,c:'#f59e0b',l:'Carbs'},{v:showDetail.fat,m:40,c:'#ef4444',l:'Fat'}].map((d,i)=>(<div key={i} className="mr"><div className="ring-wrap"><ProgressRing value={d.v} max={d.m} color={d.c}/><div className="ring-inner"><span className="ring-pct">{d.v}g</span></div></div><span>{d.l}</span></div>))}</div>
             <div className="modal-details">{showDetail.sodium!=null&&<div className="md-row"><span>Sodium</span><span>{showDetail.sodium}mg</span></div>}{showDetail.fiber!=null&&<div className="md-row"><span>Fiber</span><span>{showDetail.fiber}g</span></div>}{showDetail.sugar!=null&&<div className="md-row"><span>Sugar</span><span>{showDetail.sugar}g</span></div>}{showDetail.saturated_fat!=null&&<div className="md-row"><span>Sat. Fat</span><span>{showDetail.saturated_fat}g</span></div>}{showDetail.cholesterol!=null&&<div className="md-row"><span>Cholesterol</span><span>{showDetail.cholesterol}mg</span></div>}</div>
             {showDetail.allergens&&showDetail.allergens.replace('Contains:','').trim().length>0&&(<div className="modal-allergens">⚠️ {showDetail.allergens}</div>)}
+            <StarRating itemName={showDetail.item_name} hall={showDetail.hall} />
             <button className="mcard-log full" onClick={()=>{addToLog(showDetail);setShowDetail(null);setAlternatives([])}}>+ Log This Meal</button>
             {alternatives.length>0&&(<div style={{marginTop:20}}><h4 style={{marginBottom:8,fontSize:'.85rem',color:'#999',textTransform:'uppercase',letterSpacing:'1px'}}>Healthier Swaps</h4>{alternatives.map((a,i)=>(<div key={i} className="alt-row" onClick={()=>{setShowDetail(a);getHealthier(a)}}><div><div className="mcard-name">{a.item_name}</div><div className="mcard-macros"><span className="mm-p">{a.protein}g P</span><span className="mm-c">{a.carbs}g C</span><span className="mm-f">{a.fat}g F</span></div></div><div className="alt-nums"><div className="alt-cal">{a.calories}<small>cal</small></div><div className="alt-save">-{showDetail.calories-a.calories}</div></div></div>))}</div>)}
           </div>
