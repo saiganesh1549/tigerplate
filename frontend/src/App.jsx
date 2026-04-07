@@ -361,6 +361,44 @@ function App() {
             <div className="dc-rings">{[{l:'Calories',v:dailyTotals.calories,m:goals.calorie_goal,c:'#F56600'},{l:'Protein',v:dailyTotals.protein,m:goals.protein_goal,c:'#22c55e'},{l:'Carbs',v:dailyTotals.carbs,m:goals.carbs_goal,c:'#f59e0b'},{l:'Fat',v:dailyTotals.fat,m:goals.fat_goal,c:'#ef4444'}].map((d,i)=>(<div key={i} className="dc-ring"><div className="ring-wrap"><ProgressRing value={d.v} max={d.m} color={d.c} size={62} stroke={5}/><div className="ring-inner"><span>{d.l==='Calories'?Math.round(d.v/d.m*100)+'%':d.v+'g'}</span></div></div><span className="ring-label">{d.l}</span></div>))}</div>
           </div>
           {dailyLog.length > 0 && (<div className="section"><h3 className="sec-title">Logged Today</h3>{dailyLog.map((m,i)=>(<div key={m.id||i} className="log-item"><div><div className="log-name">{m.item_name}</div><div className="log-meta">{m.hall} · {m.calories} cal · {m.protein}g protein</div></div><button className="log-remove" onClick={()=>removeFromLog(m)}>✕</button></div>))}<div className="log-total"><span>Total</span><span>{dailyTotals.calories} cal · {dailyTotals.protein}g P · {dailyTotals.carbs}g C · {dailyTotals.fat}g F</span></div></div>)}
+          {(() => {
+            const remCal = goals.calorie_goal - dailyTotals.calories
+            const remPro = goals.protein_goal - dailyTotals.protein
+            if (remCal < 100 || meals.length === 0) return null
+            const targetCal = Math.min(remCal, remCal / 2 + 100)
+            const picks = meals
+              .filter(m => m.calories > 100 && m.calories < remCal && m.meal?.toLowerCase() === currentMealTime().toLowerCase())
+              .map(m => ({ ...m, _score: (m.protein * 4) - Math.abs(m.calories - targetCal) * 0.3 + (m.protein >= remPro * 0.3 ? 50 : 0) }))
+              .sort((a, b) => b._score - a._score)
+              .slice(0, 3)
+            if (picks.length === 0) return null
+            return (
+              <div className="section">
+                <div className="picks-header">
+                  <div>
+                    <h3 className="sec-title" style={{margin:0}}>Smart Picks for You</h3>
+                    <p className="picks-sub">{remCal} cal · {remPro}g protein left today</p>
+                  </div>
+                  <span className="picks-badge">🎯</span>
+                </div>
+                {picks.map((m,i) => (
+                  <div key={i} className="pick-card" onClick={() => getHealthier(m)}>
+                    <div className="pick-rank">{i+1}</div>
+                    <div className="pick-info">
+                      <div className="pick-name">{m.item_name}</div>
+                      <div className="pick-meta">{m.hall} · {m.station}</div>
+                      <div className="mcard-macros" style={{marginTop:4}}>
+                        <span className="mm-p">{m.protein}g P</span>
+                        <span className="mm-c">{m.carbs}g C</span>
+                        <span className="mm-f">{m.fat}g F</span>
+                      </div>
+                    </div>
+                    <div className="pick-cal">{m.calories}<small>cal</small></div>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
           <div className="section"><h3 className="sec-title">Quick Actions</h3><div className="action-grid">{[{i:'📸',l:'Scan Meal',s:'AI identifies your food',t:'scan'},{i:'🔍',l:'Browse Menu',s:'All halls, live data',t:'search'},{i:'💬',l:'Ask Tiger',s:'Your nutrition homie',t:'chat'},{i:'💪',l:'High Protein',s:'Sorted by protein',t:'search',sort:'protein'}].map((a,idx)=>(<button key={idx} className="action-btn" onClick={()=>{if(a.sort)setSortBy(a.sort);setActiveTab(a.t)}}><span className="action-icon">{a.i}</span><span className="action-label">{a.l}</span><span className="action-sub">{a.s}</span></button>))}</div></div>
         </div>
       )}

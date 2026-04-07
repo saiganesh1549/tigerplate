@@ -282,6 +282,20 @@ body{background:var(--bg);color:var(--t);font-family:'Outfit',sans-serif;-webkit
 .hr-input .auth-input{padding-right:36px}
 .big-num{font-size:1.3rem!important;font-weight:800!important;text-align:center;font-family:'JetBrains Mono',monospace!important}
 
+/* SMART PICKS */
+.picks-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.picks-sub{font-size:.65rem;color:var(--o);font-weight:600;margin-top:2px;font-family:'JetBrains Mono',monospace}
+.picks-badge{font-size:1.4rem}
+.pick-card{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(245,102,0,0.06),rgba(245,102,0,0.02));border:1px solid rgba(245,102,0,0.15);border-radius:14px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.pick-card:hover{border-color:rgba(245,102,0,0.3);transform:translateY(-1px)}
+.pick-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--o)}
+.pick-rank{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:900;color:var(--o);width:24px;text-align:center;flex-shrink:0;opacity:.4}
+.pick-info{flex:1;min-width:0}
+.pick-name{font-size:.85rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick-meta{font-size:.65rem;color:var(--td);font-weight:500;margin-top:1px}
+.pick-cal{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:800;color:var(--o);flex-shrink:0;text-align:right}
+.pick-cal small{display:block;font-size:.5rem;color:var(--td);font-weight:600}
+
 /* PROFILE PAGE */
 .prof-hero{position:relative;text-align:center;padding:40px 20px 24px;margin:-0px -16px 16px;overflow:hidden;border-radius:0 0 24px 24px}
 .prof-hero-bg{position:absolute;inset:0;background:linear-gradient(180deg,rgba(245,102,0,0.12) 0%,rgba(245,102,0,0) 100%);pointer-events:none}
