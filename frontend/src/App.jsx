@@ -54,6 +54,7 @@ function App() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [allRatings, setAllRatings] = useState({})
   const [myRatings, setMyRatings] = useState({})
+  const [favorites, setFavorites] = useState({})
   const fileInputRef = useRef(null)
   const chatEndRef = useRef(null)
 
@@ -264,6 +265,31 @@ function App() {
   }
 
   useEffect(() => { if (user) loadRatings() }, [user])
+
+  const loadFavorites = async () => {
+    if (!user || user.id === 'guest') return
+    const { data } = await supabase.from('favorites').select('item_name, hall').eq('user_id', user.id)
+    if (data) {
+      const f = {}
+      data.forEach(fav => { f[fav.item_name] = { hall: fav.hall } })
+      setFavorites(f)
+    }
+  }
+
+  useEffect(() => { if (user) loadFavorites() }, [user])
+
+  const toggleFavorite = async (meal) => {
+    if (!user || user.id === 'guest') { setLogToast('Sign up to save favorites'); setTimeout(()=>setLogToast(null),2000); return }
+    const isFav = !!favorites[meal.item_name]
+    if (isFav) {
+      await supabase.from('favorites').delete().eq('user_id', user.id).eq('item_name', meal.item_name)
+      setFavorites(prev => { const next = {...prev}; delete next[meal.item_name]; return next })
+    } else {
+      await supabase.from('favorites').insert({ user_id: user.id, item_name: meal.item_name, hall: meal.hall })
+      setFavorites(prev => ({ ...prev, [meal.item_name]: { hall: meal.hall } }))
+      setLogToast('Added to favorites'); setTimeout(()=>setLogToast(null),1500)
+    }
+  }
 
   const submitRating = async (itemName, hall, rating) => {
     if (!user || user.id === 'guest') { setLogToast('Sign up to rate meals'); setTimeout(()=>setLogToast(null),2000); return }
@@ -481,6 +507,31 @@ function App() {
             <div className="dc-rings">{[{l:'Calories',v:dailyTotals.calories,m:goals.calorie_goal,c:'#F56600'},{l:'Protein',v:dailyTotals.protein,m:goals.protein_goal,c:'#22c55e'},{l:'Carbs',v:dailyTotals.carbs,m:goals.carbs_goal,c:'#f59e0b'},{l:'Fat',v:dailyTotals.fat,m:goals.fat_goal,c:'#ef4444'}].map((d,i)=>(<div key={i} className="dc-ring"><div className="ring-wrap"><ProgressRing value={d.v} max={d.m} color={d.c} size={62} stroke={5}/><div className="ring-inner"><span>{d.l==='Calories'?Math.round(d.v/d.m*100)+'%':d.v+'g'}</span></div></div><span className="ring-label">{d.l}</span></div>))}</div>
           </div>
           {dailyLog.length > 0 && (<div className="section"><h3 className="sec-title">Logged Today</h3>{dailyLog.map((m,i)=>(<div key={m.id||i} className="log-item"><div><div className="log-name">{m.item_name}</div><div className="log-meta">{m.hall} · {m.calories} cal · {m.protein}g protein</div></div><button className="log-remove" onClick={()=>removeFromLog(m)}>✕</button></div>))}<div className="log-total"><span>Total</span><span>{dailyTotals.calories} cal · {dailyTotals.protein}g P · {dailyTotals.carbs}g C · {dailyTotals.fat}g F</span></div></div>)}
+          {(() => {
+            const favOnMenu = meals.filter(m => favorites[m.item_name])
+            if (favOnMenu.length === 0) return null
+            return (
+              <div className="section">
+                <div className="picks-header">
+                  <div>
+                    <h3 className="sec-title" style={{margin:0}}>Your Favorites — Live Now</h3>
+                    <p className="picks-sub">{favOnMenu.length} on the menu today</p>
+                  </div>
+                  <span className="picks-badge">♥</span>
+                </div>
+                {favOnMenu.slice(0, 5).map((m,i) => (
+                  <div key={i} className="fav-card" onClick={() => getHealthier(m)}>
+                    <span className="fav-heart">♥</span>
+                    <div className="pick-info">
+                      <div className="pick-name">{m.item_name}</div>
+                      <div className="pick-meta">{m.hall} · {m.station}</div>
+                    </div>
+                    <div className="pick-cal">{m.calories}<small>cal</small></div>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
           {(() => {
             const remCal = goals.calorie_goal - dailyTotals.calories
             const remPro = goals.protein_goal - dailyTotals.protein
@@ -755,6 +806,7 @@ function App() {
         <div className="overlay" onClick={()=>{setShowDetail(null);setAlternatives([])}}>
           <div className="modal fade-in" onClick={e=>e.stopPropagation()}>
             <button className="modal-x" onClick={()=>{setShowDetail(null);setAlternatives([])}}>✕</button>
+            <button className={'modal-fav'+(favorites[showDetail.item_name]?' on':'')} onClick={()=>toggleFavorite(showDetail)}>{favorites[showDetail.item_name]?'♥':'♡'}</button>
             <h2>{showDetail.item_name}</h2>
             <div className="mcard-tags" style={{marginBottom:12}}><span className="tag-hall">{showDetail.hall}</span><span className="tag-meal">{showDetail.meal}</span>{showDetail.station&&<span className="tag-station">{showDetail.station}</span>}</div>
             {showDetail.description&&<p className="modal-desc">{showDetail.description}</p>}
