@@ -508,7 +508,9 @@ function App() {
           </div>
           {dailyLog.length > 0 && (<div className="section"><h3 className="sec-title">Logged Today</h3>{dailyLog.map((m,i)=>(<div key={m.id||i} className="log-item"><div><div className="log-name">{m.item_name}</div><div className="log-meta">{m.hall} · {m.calories} cal · {m.protein}g protein</div></div><button className="log-remove" onClick={()=>removeFromLog(m)}>✕</button></div>))}<div className="log-total"><span>Total</span><span>{dailyTotals.calories} cal · {dailyTotals.protein}g P · {dailyTotals.carbs}g C · {dailyTotals.fat}g F</span></div></div>)}
           {(() => {
-            const favOnMenu = meals.filter(m => favorites[m.item_name])
+            const favOnMenu = []
+            const seenFavs = new Set()
+            meals.forEach(m => { if (favorites[m.item_name] && !seenFavs.has(m.item_name)) { seenFavs.add(m.item_name); favOnMenu.push(m) } })
             if (favOnMenu.length === 0) return null
             return (
               <div className="section">
