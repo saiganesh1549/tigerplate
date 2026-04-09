@@ -331,6 +331,18 @@ body{background:var(--bg);color:var(--t);font-family:'Outfit',sans-serif;-webkit
 .fav-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#ef4444}
 .fav-heart{font-size:1.2rem;color:#ef4444;flex-shrink:0;text-shadow:0 0 8px rgba(239,68,68,0.4)}
 
+/* ADMIN DASHBOARD */
+.admin-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+.admin-stat{background:linear-gradient(135deg,rgba(245,102,0,0.08),rgba(245,102,0,0.02));border:1px solid rgba(245,102,0,0.15);border-radius:14px;padding:14px;text-align:center}
+.as-icon{font-size:1.4rem;margin-bottom:4px}
+.as-num{font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:900;color:var(--o);line-height:1}
+.as-label{font-size:.55rem;color:var(--td);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-top:4px}
+.admin-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+.admin-row:last-child{border-bottom:none}
+.admin-rank{font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:800;color:var(--o);width:20px;opacity:.6}
+.admin-name{flex:1;font-size:.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-count{font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:800;color:var(--o)}
+
 /* PROFILE PAGE */
 .prof-hero{position:relative;text-align:center;padding:40px 20px 24px;margin:-0px -16px 16px;overflow:hidden;border-radius:0 0 24px 24px}
 .prof-hero-bg{position:absolute;inset:0;background:linear-gradient(180deg,rgba(245,102,0,0.12) 0%,rgba(245,102,0,0) 100%);pointer-events:none}

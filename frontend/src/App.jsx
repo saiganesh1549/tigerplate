@@ -55,6 +55,16 @@ function App() {
   const [allRatings, setAllRatings] = useState({})
   const [myRatings, setMyRatings] = useState({})
   const [favorites, setFavorites] = useState({})
+  const [isAdminRoute, setIsAdminRoute] = useState(window.location.hash === '#admin')
+  const [adminStats, setAdminStats] = useState(null)
+  const [adminTopItems, setAdminTopItems] = useState([])
+  const [adminRecentUsers, setAdminRecentUsers] = useState([])
+
+  useEffect(() => {
+    const handler = () => setIsAdminRoute(window.location.hash === '#admin')
+    window.addEventListener('hashchange', handler)
+    return () => window.removeEventListener('hashchange', handler)
+  }, [])
   const fileInputRef = useRef(null)
   const chatEndRef = useRef(null)
 
@@ -291,6 +301,24 @@ function App() {
     }
   }
 
+  const loadAdminData = async () => {
+    const { data: stats } = await supabase.from('admin_stats').select('*').single()
+    if (stats) setAdminStats(stats)
+
+    const { data: logs } = await supabase.from('meal_logs').select('item_name, hall, calories').limit(1000)
+    if (logs) {
+      const itemCount = {}
+      logs.forEach(l => { itemCount[l.item_name] = (itemCount[l.item_name] || 0) + 1 })
+      const top = Object.entries(itemCount).sort((a,b)=>b[1]-a[1]).slice(0, 10).map(([name, count]) => ({ name, count }))
+      setAdminTopItems(top)
+    }
+
+    const { data: profiles } = await supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(10)
+    if (profiles) setAdminRecentUsers(profiles)
+  }
+
+  useEffect(() => { if (isAdminRoute && user) loadAdminData() }, [isAdminRoute, user])
+
   const submitRating = async (itemName, hall, rating) => {
     if (!user || user.id === 'guest') { setLogToast('Sign up to rate meals'); setTimeout(()=>setLogToast(null),2000); return }
     setMyRatings(prev => ({ ...prev, [itemName]: rating }))
@@ -394,6 +422,95 @@ function App() {
 
   if (showSplash) return (<div className="splash"><div className="splash-bg"></div><div className="splash-content"><div className="splash-icon">🐾</div><h1>Tiger<span>Plate</span></h1><p>eat smarter at clemson</p><div className="splash-loader"><div className="splash-bar"></div></div></div></div>)
   if (checkingAuth) return (<div className="splash"><div className="splash-content"><div className="splash-icon">🐾</div><p>Loading...</p></div></div>)
+
+  if (isAdminRoute) {
+    if (!user || user.id === 'guest' || user.email !== 'prasanna1549@icloud.com') {
+      return (<div className="splash"><div className="splash-content"><div className="splash-icon">🔒</div><h1>Admin Only</h1><p>{!user ? 'Log in first' : user.email !== 'prasanna1549@icloud.com' ? 'Not authorized' : 'Loading...'}</p><button className="auth-btn" style={{marginTop:20,maxWidth:200}} onClick={()=>{window.location.hash='';window.location.reload()}}>← Back to app</button></div></div>)
+    }
+    return (
+      <div className="app">
+        <div className="fade-in">
+          <header className="home-header">
+            <div>
+              <p className="greeting">Admin Dashboard</p>
+              <h1 className="home-title">Tiger<span>Plate</span></h1>
+            </div>
+            <button className="btn-outline" style={{padding:'8px 14px',width:'auto'}} onClick={()=>{window.location.hash='';window.location.reload()}}>Exit</button>
+          </header>
+
+          {adminStats && (
+            <>
+              <div className="admin-grid">
+                <div className="admin-stat">
+                  <div className="as-icon">👥</div>
+                  <div className="as-num">{adminStats.total_users}</div>
+                  <div className="as-label">Total Users</div>
+                </div>
+                <div className="admin-stat">
+                  <div className="as-icon">🍽️</div>
+                  <div className="as-num">{adminStats.total_meals_logged}</div>
+                  <div className="as-label">Meals Logged</div>
+                </div>
+                <div className="admin-stat">
+                  <div className="as-icon">🔥</div>
+                  <div className="as-num">{adminStats.active_users_24h}</div>
+                  <div className="as-label">Active 24h</div>
+                </div>
+                <div className="admin-stat">
+                  <div className="as-icon">📊</div>
+                  <div className="as-num">{adminStats.active_users_7d}</div>
+                  <div className="as-label">Active 7d</div>
+                </div>
+                <div className="admin-stat">
+                  <div className="as-icon">📝</div>
+                  <div className="as-num">{adminStats.meals_logged_24h}</div>
+                  <div className="as-label">Logs 24h</div>
+                </div>
+                <div className="admin-stat">
+                  <div className="as-icon">⭐</div>
+                  <div className="as-num">{adminStats.total_ratings}</div>
+                  <div className="as-label">Ratings</div>
+                </div>
+                <div className="admin-stat">
+                  <div className="as-icon">♥</div>
+                  <div className="as-num">{adminStats.total_favorites}</div>
+                  <div className="as-label">Favorites</div>
+                </div>
+              </div>
+
+              {adminTopItems.length > 0 && (
+                <div className="prof-card">
+                  <h3 className="prof-section-title">Top Items (All Time)</h3>
+                  {adminTopItems.map((t, i) => (
+                    <div key={i} className="admin-row">
+                      <span className="admin-rank">{i+1}</span>
+                      <span className="admin-name">{t.name}</span>
+                      <span className="admin-count">{t.count}×</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {adminRecentUsers.length > 0 && (
+                <div className="prof-card">
+                  <h3 className="prof-section-title">Recent Signups</h3>
+                  {adminRecentUsers.map((u, i) => (
+                    <div key={i} className="admin-row">
+                      <span className="admin-rank">{i+1}</span>
+                      <span className="admin-name">{u.name || 'Unnamed'}</span>
+                      <span className="admin-count">{u.goal || '—'}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button className="auth-btn" style={{marginBottom:20}} onClick={loadAdminData}>🔄 Refresh</button>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   if (!user) return (
     <div className="app auth-page">
